@@ -16,7 +16,7 @@ public class Grid extends JPanel{
         setPreferredSize(new Dimension(500, 500));
         squares = new Square[25];
         for(int i = 0; i < 25; i++) {
-            squares[i] = new Square();
+            squares[i] = new Square(i);
             add(squares[i]);
         }
     }
