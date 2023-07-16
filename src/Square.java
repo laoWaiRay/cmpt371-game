@@ -29,6 +29,11 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         brush_color = color;
     }
 
+    public void setImage(BufferedImage image) {
+        img = image;
+        repaint();
+    }
+
     @Override
     public void mouseDragged(MouseEvent e) {
         Graphics g = img.getGraphics();
