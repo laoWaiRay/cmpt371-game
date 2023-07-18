@@ -12,8 +12,11 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
     final static int width = 100;
     final static int height = 100;
     final static int brush_size = 10;
+    private Client client;
+    private Game game;
+    private final Object lock;
 
-    public Square(int id) {
+    public Square(int id, Client client, Game game, Object lock) {
         super();
         this.id = id;
         setPreferredSize(new Dimension(width, height));
@@ -23,10 +26,22 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         this.addMouseMotionListener(this);
         this.addMouseListener(this);
+
+        this.client = client;
+        this.game = game;
+        this.lock = lock;
     }
 
     public void setBrushColor(Color color) {
         brush_color = color;
+    }
+
+    public void setImage(BufferedImage image) {
+        img = image;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
     }
 
     @Override
@@ -38,9 +53,14 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         Point p = e.getPoint();
         g.fillOval(p.x - brush_size, p.y - brush_size, brush_size, brush_size);
 
-        // REDRAW SQUARE USING NEW GRAPHICS
-        g.dispose();
-        repaint();
+        // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
+        synchronized (lock) {
+            g.dispose();
+            game.changeSquare(id, img);
+            game.setStillDrawing(true);
+            lock.notifyAll();
+            repaint();
+        }
     }
 
     // RETURNS Percentage of square that is colored in
@@ -69,8 +89,7 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             setBackground(Color.WHITE);
         }
 
-        img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        repaint();
+        game.changeSquare(id, new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB));
     }
 
     @Override
