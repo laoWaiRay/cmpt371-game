@@ -9,11 +9,12 @@ public class Main extends JFrame {
     private Game game = new Game();
     private Client client;
     private Server server;
+    private final Object lock = new Object();
 
     public Main() {
         super("371 Game");
-        grid = new Grid(client, game);
-        connectionMenu = new ConnectionMenu(game, client, this, grid);
+        grid = new Grid(client, game, lock);
+        connectionMenu = new ConnectionMenu(game, client, this, grid, lock);
 
         initComponents();
 

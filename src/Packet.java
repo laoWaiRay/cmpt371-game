@@ -8,10 +8,12 @@ public class Packet implements Serializable {
     String token = null;
     byte[] bytes;
     int index;
+    int senderId;
 
-    public Packet(String token, Game game) {
+    public Packet(String token, Game game, int senderId) {
         this.token = token;
         this.index = game.getLastChangedSquare();
+        this.senderId = senderId;
         bytes = bufferedImageToByteArray(game.getSquare(this.index));
     }
 

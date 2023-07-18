@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class ConnectionMenu extends JPanel {
@@ -9,17 +8,20 @@ public class ConnectionMenu extends JPanel {
     private Game game;
     private Main parent;
     private Grid grid;
+    private Object lock;
 
     JPanel serverPanel = new JPanel(new FlowLayout());
     JPanel clientPanel = new JPanel(new FlowLayout());
 
-    public ConnectionMenu(Game game, Client client, Main parent, Grid grid) {
+    public ConnectionMenu(Game game, Client client, Main parent, Grid grid, Object lock) {
         super(new FlowLayout());
         this.parent = parent;
-        initComponents();
         this.game = game;
         this.client = client;
         this.grid = grid;
+        this.lock = lock;
+
+        initComponents();
     }
 
     private void initComponents() {
@@ -59,7 +61,7 @@ public class ConnectionMenu extends JPanel {
     };
 
     private final ActionListener clientStartHandler = e -> {
-        client = new Client(8080, game, grid);
+        client = new Client(8080, game, grid, lock);
         client.start();
         parent.setClient(client);
     };

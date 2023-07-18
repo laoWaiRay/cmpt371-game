@@ -9,6 +9,7 @@ public class Server extends Thread {
     int port;
     private Game game;
     private Grid grid;
+    private int nextId = 1;
 
     public Server(int port, Game game, Grid grid) {
         this.port = port;
@@ -49,7 +50,8 @@ public class Server extends Thread {
                         ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                         ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
 
-                        Thread thread = new Thread(new ClientHandler(clientSocket, ois, oos, game, grid));
+                        Thread thread = new Thread(new ClientHandler(clientSocket, ois, oos, game, grid, nextId));
+                        nextId++;
                         thread.start();
                     } catch (IOException error) {
                         System.out.println("Could not read data from client");
@@ -69,22 +71,36 @@ class ClientHandler implements Runnable {
     private final ObjectOutputStream oos;
     private Game game;
     private Grid grid;
+    private int id;
 
-    public ClientHandler(Socket socket, ObjectInputStream ois, ObjectOutputStream oos, Game game, Grid grid) {
+    public ClientHandler(Socket socket, ObjectInputStream ois, ObjectOutputStream oos, Game game, Grid grid, int id) {
         this.socket = socket;
         this.ois = ois;
         this.oos = oos;
         this.game = game;
         this.grid = grid;
+        this.id = id;
     }
 
     @Override
     public void run() {
         System.out.println("ClientHandler started for client: " + socket.getInetAddress());
+        // Initial connection handling: Assign ID to client that is connecting
+        try {
+            oos.writeObject(new Packet("CONNECT", game, id));
+
+            Packet packet = (Packet) ois.readObject();
+            System.out.println("Received initial packet from sender id: " + packet.senderId);
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
         while (true) {
             try {
                 // READ
+                System.out.println("READING ON SERVER");
                 Packet packetIn = (Packet) ois.readObject();
+                int senderId = packetIn.senderId;
                 InputStream is = new ByteArrayInputStream(packetIn.bytes);
                 BufferedImage bufferedImage = ImageIO.read(is);
                 is.close();
@@ -94,7 +110,8 @@ class ClientHandler implements Runnable {
                 grid.repaintSquare(packetIn.index);
 
                 // WRITE
-                oos.writeObject(new Packet("DRAW", game));
+                System.out.println("WRITING ON SERVER");
+                oos.writeObject(new Packet("DRAW", game, senderId));
             } catch (IOException error) {
                 System.out.println("Error reading from object stream");
                 error.printStackTrace();
@@ -104,3 +121,11 @@ class ClientHandler implements Runnable {
         }
     }
 }
+
+/* TODO - 2023/7/18 | 01:16 | raymondly
+*   Make it so that server maintains a pool of all of it's client threads,
+*   and then broadcasts received packets to ALL clients.
+*   How to handle concurrency?
+*   Clients can read packets from server until they read their own sender id packet,
+*   which lets them know they can send again?
+* */

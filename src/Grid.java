@@ -8,12 +8,14 @@ public class Grid extends JPanel{
     private Square[] squares;
     private Client client;
     private Game game;
+    private Object lock;
 
-    public Grid(Client client, Game game) {
+    public Grid(Client client, Game game, Object lock) {
         super(new GridLayout(5,5));
         this.client = client;
         System.out.println(client);
         this.game = game;
+        this.lock = lock;
         initComponents();
     }
 
@@ -22,7 +24,7 @@ public class Grid extends JPanel{
         setPreferredSize(new Dimension(500, 500));
         squares = new Square[25];
         for(int i = 0; i < 25; i++) {
-            squares[i] = new Square(i, client, game);
+            squares[i] = new Square(i, client, game, lock);
             add(squares[i]);
         }
     }

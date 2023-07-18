@@ -14,8 +14,9 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
     final static int brush_size = 10;
     private Client client;
     private Game game;
+    private final Object lock;
 
-    public Square(int id, Client client, Game game) {
+    public Square(int id, Client client, Game game, Object lock) {
         super();
         this.id = id;
         setPreferredSize(new Dimension(width, height));
@@ -28,6 +29,7 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
 
         this.client = client;
         this.game = game;
+        this.lock = lock;
     }
 
     public void setBrushColor(Color color) {
@@ -52,9 +54,13 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         g.fillOval(p.x - brush_size, p.y - brush_size, brush_size, brush_size);
 
         // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
-        g.dispose();
-        game.changeSquare(id, img);
-        repaint();
+        synchronized (lock) {
+            g.dispose();
+            game.changeSquare(id, img);
+            game.setStillDrawing(true);
+            lock.notifyAll();
+            repaint();
+        }
     }
 
     // RETURNS Percentage of square that is colored in
