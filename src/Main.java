@@ -18,7 +18,7 @@ public class Main extends JFrame {
 
         initComponents();
 
-        setSize(800, 800);
+        setSize(600, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 

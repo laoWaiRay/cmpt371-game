@@ -81,7 +81,6 @@ class ServerListener implements Runnable {
         while (true) {
             try {
                 // READ
-                System.out.println("READING ON CLIENT");
                 Packet packetIn = (Packet) ois.readObject();
 
                 InputStream in = new ByteArrayInputStream(packetIn.bytes);
@@ -130,7 +129,6 @@ class UserInputListener implements Runnable {
 
             if (game.getIsStillDrawing()) {
                 try {
-                    System.out.println("WRITING ON CLIENT");
                     oos.writeObject(new Packet("DRAW", game, id));
                     game.setStillDrawing(false);
                 } catch (IOException e) {
