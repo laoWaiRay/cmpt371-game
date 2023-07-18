@@ -1,3 +1,5 @@
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -5,9 +7,13 @@ import java.net.Socket;
 public class Server extends Thread {
     private ServerSocket serverSocket;
     int port;
+    private Game game;
+    private Grid grid;
 
-    public Server(int port) {
+    public Server(int port, Game game, Grid grid) {
         this.port = port;
+        this.game = game;
+        this.grid = grid;
         startServerSocket();
     }
 
@@ -22,7 +28,7 @@ public class Server extends Thread {
 
     public void stopServerSocket() {
         try {
-            System.out.println("HERE@");
+            System.out.println("Closing server socket...");
             serverSocket.close();
         } catch (IOException error) {
             System.out.println("Could not close server socket");
@@ -33,21 +39,22 @@ public class Server extends Thread {
     @Override
     public void run() {
         // Listen for client connections and create new threads
-        Thread serverSocketHandler = new Thread(() -> {
-            while (true) {
-                try {
-                    Socket clientSocket = serverSocket.accept();
-                    System.out.println("Connected to client");
-                    InputStream is = clientSocket.getInputStream();
-                    OutputStream os = clientSocket.getOutputStream();
-                    ObjectInputStream ois = new ObjectInputStream(is);
-                    ObjectOutputStream oos = new ObjectOutputStream(os);
+        Thread serverSocketHandler = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Socket clientSocket = serverSocket.accept();
+                        System.out.println("Connected to new client");
+                        ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                        ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
 
-                    Thread thread = new Thread(new ClientHandler(clientSocket, ois, oos));
-                    thread.start();
-                } catch (IOException error) {
-                    System.out.println("Error establishing client socket connection");
-                    break;
+                        Thread thread = new Thread(new ClientHandler(clientSocket, ois, oos, game, grid));
+                        thread.start();
+                    } catch (IOException error) {
+                        System.out.println("Could not read data from client");
+                        break;
+                    }
                 }
             }
         });
@@ -60,34 +67,40 @@ class ClientHandler implements Runnable {
     private final Socket socket;
     private final ObjectInputStream ois;
     private final ObjectOutputStream oos;
+    private Game game;
+    private Grid grid;
 
-    public ClientHandler(Socket socket, ObjectInputStream ois, ObjectOutputStream oos) {
+    public ClientHandler(Socket socket, ObjectInputStream ois, ObjectOutputStream oos, Game game, Grid grid) {
         this.socket = socket;
         this.ois = ois;
         this.oos = oos;
-        System.out.println("Connected to server!: ");
+        this.game = game;
+        this.grid = grid;
     }
 
     @Override
     public void run() {
+        System.out.println("ClientHandler started for client: " + socket.getInetAddress());
         while (true) {
             try {
-                Message msg = (Message) ois.readObject();
-                if (msg.token.equals("EXIT")) break;
+                // READ
+                Packet packetIn = (Packet) ois.readObject();
+                InputStream is = new ByteArrayInputStream(packetIn.bytes);
+                BufferedImage bufferedImage = ImageIO.read(is);
+                is.close();
+
+                game.changeSquare(packetIn.index, bufferedImage);
+                grid.updateImage(packetIn.index);
+                grid.repaintSquare(packetIn.index);
+
+                // WRITE
+                oos.writeObject(new Packet("DRAW", game));
             } catch (IOException error) {
                 System.out.println("Error reading from object stream");
                 error.printStackTrace();
             } catch (ClassNotFoundException error) {
                 System.out.println("Error reading from object stream: Class not found");
             }
-        }
-
-        try {
-            ois.close();
-            oos.close();
-            socket.close();
-        } catch (IOException error) {
-            System.out.println("Error closing socket");
         }
     }
 }
