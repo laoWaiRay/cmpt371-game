@@ -13,7 +13,6 @@ public class Grid extends JPanel{
     public Grid(Client client, Game game, Object lock) {
         super(new GridLayout(5,5));
         this.client = client;
-        System.out.println(client);
         this.game = game;
         this.lock = lock;
         initComponents();

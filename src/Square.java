@@ -7,7 +7,8 @@ import java.awt.image.BufferedImage;
 
 public class Square extends JPanel implements MouseMotionListener, MouseListener {
     private BufferedImage img;
-    private Color brush_color = Color.BLUE;
+    private String color_name;
+    private Color brush_color = null;
     public int id;
     final static int width = 100;
     final static int height = 100;
@@ -44,8 +45,16 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         this.client = client;
     }
 
+    public void setColors() {
+        brush_color = client.getColor();
+    }
+
     @Override
     public void mouseDragged(MouseEvent e) {
+        if (client == null) return;
+        if (brush_color == null)
+            setColors();
+
         Graphics g = img.getGraphics();
 
         // COLOR THE SQUARE
@@ -83,13 +92,27 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
     @Override
     public void mouseReleased(MouseEvent e) {
         double percentColored = calculateColoredPercentage();
+        BufferedImage updatedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics g = updatedImage.getGraphics();
+
         if (percentColored > 0.5) {
-            setBackground(brush_color);
+            g.setColor(brush_color);
         } else {
-            setBackground(Color.WHITE);
+            g.setColor(Color.WHITE);
         }
 
-        game.changeSquare(id, new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB));
+        g.fillRect(0, 0, width, height);
+        img = updatedImage;
+        repaint();
+
+        // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
+        synchronized (lock) {
+            g.dispose();
+            game.changeSquare(id, updatedImage);
+            game.setStillDrawing(true);
+            lock.notifyAll();
+            repaint();
+        }
     }
 
     @Override

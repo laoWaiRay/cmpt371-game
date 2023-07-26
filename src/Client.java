@@ -1,4 +1,5 @@
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.InetAddress;
@@ -13,6 +14,8 @@ public class Client extends Thread {
     private Grid grid;
     private Object lock;
     volatile boolean isRunning = true;
+    private String colorName;
+    private Color color;
 
     public Client(int port, Game game, Grid grid, Object lock) {
         this.port = port;
@@ -34,6 +37,7 @@ public class Client extends Thread {
             try {
                 Packet packet = (Packet) ois.readObject();
                 id = packet.senderId;
+                setColor();
 
                 oos.writeObject(new Packet("CONNECT", game, id));
             } catch (IOException | ClassNotFoundException e) {
@@ -60,6 +64,27 @@ public class Client extends Thread {
         } catch (IOException error) {
             System.out.println("Error connecting to server");
         }
+    }
+
+    private void setColor() {
+        ColorPair[] colorPairs = new ColorPair[] {
+                new ColorPair("BLUE", Color.BLUE),
+                new ColorPair("RED", Color.RED),
+                new ColorPair("YELLOW", Color.YELLOW),
+                new ColorPair("GREEN", Color.GREEN)
+        };
+
+        // id - 1 because the server assigns ids starting at 1
+        colorName = colorPairs[id - 1].name;
+        color = colorPairs[id - 1].color;
+    }
+
+    public String getColorName() {
+        return colorName;
+    }
+
+    public Color getColor() {
+        return color;
     }
 }
 

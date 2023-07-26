@@ -139,6 +139,7 @@ class ClientConnection {
     private int id;
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
+    private String color;
 
     public ClientConnection(int id, ObjectOutputStream oos, ObjectInputStream ois) {
         this.id = id;
@@ -158,11 +159,3 @@ class ClientConnection {
         return id;
     }
 }
-
-/* TODO - 2023/7/18 | 01:16 | raymondly
-*   Make it so that server maintains a pool of all of it's client threads,
-*   and then broadcasts received packets to ALL clients.
-*   How to handle concurrency?
-*   Clients can read packets from server until they read their own sender id packet,
-*   which lets them know they can send again?
-* */

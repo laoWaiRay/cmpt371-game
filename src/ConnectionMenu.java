@@ -62,7 +62,7 @@ public class ConnectionMenu extends JPanel {
 
     private final ActionListener clientStartHandler = e -> {
         client = new Client(8080, game, grid, lock);
-        client.start();
         parent.setClient(client);
+        client.start();
     };
 }
