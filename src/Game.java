@@ -1,5 +1,9 @@
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.Serializable;
+import java.awt.Graphics;
+
+import javax.swing.JFrame;
 
 public class Game implements Serializable {
     private BufferedImage[] squares = new BufferedImage[25];
@@ -32,4 +36,18 @@ public class Game implements Serializable {
     public synchronized boolean getIsStillDrawing() {
         return isStillDrawing;
     }
+
+    //checks all squares to see if any square is still blank/white 
+    public synchronized boolean isGameFinished(){
+        for (int i = 0; i < 25; i++){
+            int rgb = getSquare(i).getRGB(50, 50);
+            Color colour = new Color(rgb);
+            Color def = new Color(0, 0,0);
+            if(colour.equals(Color.WHITE) | colour.equals(def)){
+                return false;
+            }
+        }
+        return true;
+    }
+    
 }

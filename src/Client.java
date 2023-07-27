@@ -16,6 +16,7 @@ public class Client extends Thread {
     volatile boolean isRunning = true;
     private String colorName;
     private Color color;
+    private int score = 0;      //keeps track of each players score
 
     public Client(int port, Game game, Grid grid, Object lock) {
         this.port = port;
@@ -86,6 +87,14 @@ public class Client extends Thread {
     public Color getColor() {
         return color;
     }
+
+    public int getScore(){
+        return score;
+    }
+    public void addScore(){
+        score += 1;
+    }
+
 }
 
 class ServerListener implements Runnable {
