@@ -17,6 +17,7 @@ public class Client extends Thread {
     private String colorName;
     private Color color;
     private int score = 0;      //keeps track of each players score
+    private String tokenMessage = "DRAW";
 
     public Client(int port, Game game, Grid grid, Object lock) {
         this.port = port;
@@ -46,8 +47,8 @@ public class Client extends Thread {
             }
 
             // Start the Read/write loop threads to sync game with server
-            Thread readThread = new Thread(new ServerListener(id, ois, game, grid));
-            Thread writeThread = new Thread(new UserInputListener(id, oos, game, lock));
+            Thread readThread = new Thread(new ServerListener(id, ois, game, grid, this));
+            Thread writeThread = new Thread(new UserInputListener(id, oos, game, lock, this));
 
             readThread.start();
             writeThread.start();
@@ -99,6 +100,14 @@ public class Client extends Thread {
         return id;
     }
 
+    public void setTokenMessage(String message) {
+        tokenMessage = message;
+    }
+
+    public String getTokenMessage() {
+        return tokenMessage;
+    }
+
 }
 
 class ServerListener implements Runnable {
@@ -106,30 +115,41 @@ class ServerListener implements Runnable {
     private ObjectInputStream ois;
     private Game game;
     private Grid grid;
+    private Client client;
 
-    public ServerListener(int id, ObjectInputStream ois, Game game, Grid grid) {
+    public ServerListener(int id, ObjectInputStream ois, Game game, Grid grid, Client client) {
         this.id = id;
         this.ois = ois;
         this.game = game;
         this.grid = grid;
+        this.client = client;
     }
 
     @Override
     public void run() {
         while (true) {
             try {
-                // READ
+                // READ FROM SERVER AND UPDATE CLIENT GAME STATE
                 Packet packetIn = (Packet) ois.readObject();
 
-                InputStream in = new ByteArrayInputStream(packetIn.bytes);
-                BufferedImage bufferedImage = ImageIO.read(in);
-                in.close();
+                switch (packetIn.token) {
+                    case "LOCK":
+                        int squareIndex = packetIn.index;
+                        int senderId = packetIn.senderId;
+                        game.getGameSquare(squareIndex).acquireLock(senderId);
+                        break;
+                    case "DRAW":
+                        InputStream in = new ByteArrayInputStream(packetIn.bytes);
+                        BufferedImage bufferedImage = ImageIO.read(in);
+                        in.close();
 
-                // Avoid duplicate rendering of own square data
-                if (packetIn.senderId != id) {
-                    game.changeSquare(packetIn.index, bufferedImage);
-                    grid.updateImage(packetIn.index);
-                    grid.repaintSquare(packetIn.index);
+                        // Avoid duplicate rendering of own square data
+                        if (packetIn.senderId != id) {
+                            game.changeSquare(packetIn.index, bufferedImage);
+                            grid.updateImage(packetIn.index);
+                            grid.repaintSquare(packetIn.index);
+                        }
+                        break;
                 }
             } catch (IOException e) {
                 break;
@@ -145,12 +165,15 @@ class UserInputListener implements Runnable {
     private ObjectOutputStream oos;
     private Game game;
     private Object lock;
+    private String tokenMessage;
+    private Client client;
 
-    public UserInputListener(int id, ObjectOutputStream oos, Game game, Object lock) {
+    public UserInputListener(int id, ObjectOutputStream oos, Game game, Object lock, Client client) {
         this.id = id;
         this.oos = oos;
         this.game = game;
         this.lock = lock;
+        this.client = client;
     }
 
     @Override
@@ -165,9 +188,10 @@ class UserInputListener implements Runnable {
                 }
             }
 
-            if (game.getIsStillDrawing()) {
+            if (game.getIsStillDrawing() || true) {
                 try {
-                    oos.writeObject(new Packet("DRAW", game, id));
+                    System.out.println(client.getTokenMessage());
+                    oos.writeObject(new Packet(client.getTokenMessage(), game, id));
                     game.setStillDrawing(false);
                 } catch (IOException e) {
                     e.printStackTrace();

@@ -36,7 +36,7 @@ public class Grid extends JPanel{
     }
 
     public void updateImage(int index) {
-        squares[index].setImage(game.getSquare(index));
+        squares[index].setImage(game.getSquareImage(index));
     }
 
     public void repaintSquare(int index) {

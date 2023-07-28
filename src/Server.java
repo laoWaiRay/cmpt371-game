@@ -115,16 +115,34 @@ class ClientHandler implements Runnable {
                 // READ
                 Packet packetIn = (Packet) ois.readObject();
                 int senderId = packetIn.senderId;
-                InputStream is = new ByteArrayInputStream(packetIn.bytes);
-                BufferedImage bufferedImage = ImageIO.read(is);
-                is.close();
+                int squareIndex = packetIn.index;
 
-                game.changeSquare(packetIn.index, bufferedImage);
-                grid.updateImage(packetIn.index);
-                grid.repaintSquare(packetIn.index);
+                switch (packetIn.token) {
+                    case "LOCK":
+                        System.out.println("GETTING LOCK");
+                        game.getGameSquare(squareIndex).acquireLock(senderId);
+                        break;
+                    case "DRAW":
+                        InputStream is = new ByteArrayInputStream(packetIn.bytes);
+                        BufferedImage bufferedImage = ImageIO.read(is);
+                        is.close();
+
+                        game.changeSquare(packetIn.index, bufferedImage);
+                        grid.updateImage(packetIn.index);
+                        grid.repaintSquare(packetIn.index);
+                        break;
+                }
 
                 // WRITE
-                server.messageAllClients("DRAW", game, senderId);
+                game.setLastChangedSquare(squareIndex);
+                switch(packetIn.token) {
+                    case "LOCK":
+                        server.messageAllClients("LOCK", game, senderId);
+                        break;
+                    case "DRAW":
+                        server.messageAllClients("DRAW", game, senderId);
+                        break;
+                }
                 // oos.writeObject(new Packet("DRAW", game, senderId));
             } catch (IOException error) {
                 System.out.println("Error reading from object stream");
@@ -148,6 +166,7 @@ class ClientConnection {
         this.ois = ois;
     }
 
+    // Sends a message from the server to the client
     public void sendMessage(String token, Game game, int senderId) {
         try {
             oos.writeObject(new Packet(token, game, senderId));

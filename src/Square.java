@@ -65,20 +65,24 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         if (brush_color == null)
             setColors();
 
-        Graphics g = img.getGraphics();
+        // Only update the game state if this client has acquired access to the square from server
+        if (game.getGameSquare(id).hasAccess(client.getClientId())) {
+            client.setTokenMessage("DRAW");
+            Graphics g = img.getGraphics();
 
-        // COLOR THE SQUARE
-        g.setColor(brush_color);
-        Point p = e.getPoint();
-        g.fillOval(p.x - brush_size, p.y - brush_size, brush_size, brush_size);
+            // COLOR THE SQUARE
+            g.setColor(brush_color);
+            Point p = e.getPoint();
+            g.fillOval(p.x - brush_size, p.y - brush_size, brush_size, brush_size);
 
-        // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
-        synchronized (lock) {
-            g.dispose();
-            game.changeSquare(id, img);
-            game.setStillDrawing(true);
-            lock.notifyAll();
-            repaint();
+            // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
+            synchronized (lock) {
+                g.dispose();
+                game.changeSquare(id, img);
+                game.setStillDrawing(true);
+                lock.notifyAll();
+                repaint();
+            }
         }
     }
 
@@ -101,6 +105,9 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
 
     @Override
     public void mouseReleased(MouseEvent e) {
+        if (!game.getGameSquare(id).hasAccess(client.getClientId())) return;
+        client.setTokenMessage("DRAW");
+
         double percentColored = calculateColoredPercentage();
         BufferedImage updatedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics g = updatedImage.getGraphics();
@@ -121,6 +128,7 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             g.dispose();
             game.changeSquare(id, updatedImage);
             game.setStillDrawing(true);
+            client.setTokenMessage("DRAW");
             lock.notifyAll();
             repaint();
             System.out.println("Client " + client.getClientId() + " Score: " + client.getScore());
@@ -136,6 +144,11 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
     /* TODO - 2023/7/15 | 17:41 | raymondly
     *   LOCK THE SQUARE WHILE A USER IS DRAGGING MOUSE INSIDE OF IT
     * */
+        game.setLastChangedSquare(id);
+        synchronized (lock) {
+            client.setTokenMessage("LOCK");
+            lock.notifyAll();
+        }
     }
 
     @Override

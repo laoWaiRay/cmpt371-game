@@ -14,7 +14,7 @@ public class Packet implements Serializable {
         this.token = token;
         this.index = game.getLastChangedSquare();
         this.senderId = senderId;
-        bytes = bufferedImageToByteArray(game.getSquare(this.index));
+        bytes = bufferedImageToByteArray(game.getSquareImage(this.index));
     }
 
     private byte[] bufferedImageToByteArray(BufferedImage img) {
