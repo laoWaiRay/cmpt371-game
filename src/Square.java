@@ -123,7 +123,7 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             game.setStillDrawing(true);
             lock.notifyAll();
             repaint();
-            System.out.println("Client " + client.getId() + " Score: " + client.getScore());
+            System.out.println("Client " + client.getClientId() + " Score: " + client.getScore());
             if(game.isGameFinished()){
                 System.out.println("Game Over");
                 //change screen to game over screen with winner shown

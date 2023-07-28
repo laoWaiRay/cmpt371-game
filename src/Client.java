@@ -95,6 +95,10 @@ public class Client extends Thread {
         score += 1;
     }
 
+    public int getClientId() {
+        return id;
+    }
+
 }
 
 class ServerListener implements Runnable {
