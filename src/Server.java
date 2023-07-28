@@ -129,7 +129,6 @@ class ClientHandler implements Runnable {
                         grid.updateImage(packetIn.index);
                         grid.repaintSquare(packetIn.index);
                     }
-                        
                 }
                 // WRITE
                 server.messageAllClients("DRAW", game, senderId);

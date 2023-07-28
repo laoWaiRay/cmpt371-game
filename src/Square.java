@@ -51,6 +51,16 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
 
     @Override
     public void mouseDragged(MouseEvent e) {
+        /* TODO - 2023/7/26 | 01:29 | raymondly
+        *   INITIALLY, ALL SQUARES SHOULD BE LOCKED ON THE SERVER.
+        *   CLIENT SENDS A TOKEN REQUEST TO SERVER FOR THE LOCK ON THE SQUARE,
+        *   BEFORE ALLOWING THE USER TO DRAW.
+        *   LOCK SHOULD ONLY BE GIVEN IF THE SQUARE IS NOT CURRENTLY ACQUIRED
+        *   BY ANOTHER PLAYER, AND THE SQUARE IS NOT FULLY COLORED.
+        *   ONCE ACQUIRED, THE USER CAN UPDATE THE SQUARE
+        *   ON MOUSE RELEASE, SEND A RELEASE TOKEN TO INDICATE
+        *   TO SERVER TO RELEASE THE LOCK
+        * */
         if (client == null) return;
         if (brush_color == null)
             setColors();
