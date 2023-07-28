@@ -51,3 +51,39 @@ public class Game implements Serializable {
     }
     
 }
+
+class GameSquare {
+    private BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
+    private int lockHolderId = 0;   // Client Ids start from 1
+    private boolean fullyColored = false;
+
+    // Only allow one client to have access to the square at a time
+    public void acquireLock(int clientId) {
+        if (lockHolderId != 0 || fullyColored) return;
+        lockHolderId = clientId;
+    }
+
+    public void releaseLock() {
+        lockHolderId = 0;
+    }
+
+    public boolean hasAccess(int clientId) {
+        return clientId == lockHolderId;
+    }
+
+    public void setImage(BufferedImage image) {
+        this.image = image;
+    }
+
+    public BufferedImage getImage() {
+        return image;
+    }
+
+    public void setFullyColored(boolean fullyColored) {
+        this.fullyColored = fullyColored;
+    }
+
+    public boolean getFullyColored() {
+        return fullyColored;
+    }
+}

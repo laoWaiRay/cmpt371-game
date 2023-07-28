@@ -62,6 +62,7 @@ public class Server extends Thread {
                     // Create and add new client connection to the list of connections
                     ClientConnection clientConnection = new ClientConnection(nextId, oos, ois);
                     clientList.add(clientConnection);
+                    System.out.println("Connected new client id: " + nextId);
 
                     nextId++;
                     thread.start();
