@@ -62,7 +62,10 @@ public class Server extends Thread {
                     // Create and add new client connection to the list of connections
                     ClientConnection clientConnection = new ClientConnection(nextId, oos, ois);
                     clientList.add(clientConnection);
-
+                    clientConnection.sendMessage("CONNECT", game, nextId);
+                    System.out.println("Sending new player packet to host");
+                    //Inform host that a new player has joined
+                    clientList.get(0).sendMessage("NEW_PLAYER", game, 0);
                     nextId++;
                     thread.start();
                 } catch (IOException error) {
@@ -102,7 +105,6 @@ class ClientHandler implements Runnable {
         // Initial connection handling: Assign ID to client that is connecting
         try {
             oos.writeObject(new Packet("CONNECT", game, id));
-
             Packet packet = (Packet) ois.readObject();
             System.out.println("Received initial packet from sender id: " + packet.senderId);
         } catch (IOException | ClassNotFoundException e) {
@@ -117,11 +119,18 @@ class ClientHandler implements Runnable {
                 InputStream is = new ByteArrayInputStream(packetIn.bytes);
                 BufferedImage bufferedImage = ImageIO.read(is);
                 is.close();
-
-                game.changeSquare(packetIn.index, bufferedImage);
-                grid.updateImage(packetIn.index);
-                grid.repaintSquare(packetIn.index);
-
+                switch(packetIn.token){
+                    //Inform all clients to start
+                    case "START" -> {
+                        server.messageAllClients("START", game, senderId);
+                    }
+                    case "DRAW" -> {
+                        game.changeSquare(packetIn.index, bufferedImage);
+                        grid.updateImage(packetIn.index);
+                        grid.repaintSquare(packetIn.index);
+                    }
+                        
+                }
                 // WRITE
                 server.messageAllClients("DRAW", game, senderId);
                 // oos.writeObject(new Packet("DRAW", game, senderId));
@@ -130,7 +139,8 @@ class ClientHandler implements Runnable {
                 error.printStackTrace();
             } catch (ClassNotFoundException error) {
                 System.out.println("Error reading from object stream: Class not found");
-            }
+            }                
+
         }
     }
 }
