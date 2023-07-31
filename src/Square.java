@@ -80,8 +80,11 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 int pixel = img.getRGB(x, y);
-                if (pixel == brush_color.getRGB()) {
-                    coloredPixels++;
+                if(brush_color != null) {
+                    if (pixel == brush_color.getRGB()) {
+                        coloredPixels++;
+                    }
+                    
                 }
             }
         }

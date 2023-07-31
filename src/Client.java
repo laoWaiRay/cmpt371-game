@@ -116,11 +116,11 @@ public class Client extends Thread {
                             gameStarted = true;
                         }
                     }
-                    }                  
-                }
-                catch (IOException | ClassNotFoundException e) {
-                        e.printStackTrace();
-                }   
+                }                  
+            }
+            catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+            }   
 
 
 
@@ -203,11 +203,11 @@ class ServerListener implements Runnable {
 
                 // Avoid duplicate rendering of own square data
                 if(packetIn.token.equals("DRAW")) {
-                    // if (packetIn.senderId != id) {
+                    if (packetIn.senderId != id) {
                     game.changeSquare(packetIn.index, bufferedImage);
                     grid.updateImage(packetIn.index);
                     grid.repaintSquare(packetIn.index);
-                // }
+                    }
                     continue;
                 }
             } catch (IOException e) {
