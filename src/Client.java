@@ -1,9 +1,19 @@
 import javax.imageio.ImageIO;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
+
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Timer;
 
 public class Client extends Thread {
     private int port;
@@ -39,12 +49,81 @@ public class Client extends Thread {
             try {
                 Packet packet = (Packet) ois.readObject();
                 id = packet.senderId;
+                
                 setColor();
-
+                if(packet.token.equals("CONNECT")) {
+                        JOptionPane.showMessageDialog(grid, "You are player " + id + "!\n Your color is " + colorName + "!");
+                }
                 oos.writeObject(new Packet("CONNECT", game, id));
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
+                //Dialog box for host to start game (Assuming host id is always 1)
+                if(this.id==1) {
+                    int numPlayers = 0;
+                    int totalPlayers = 4;
+                    boolean gameStarted = false;
+                    String s = String.format("Number of Players: %d/%d", numPlayers, totalPlayers);
+                    Window window = SwingUtilities.windowForComponent(grid);
+                    JDialog d = new JDialog(window, "Host");
+                    JLabel label = new JLabel((s), JLabel.CENTER);
+                    JButton startButton = new JButton("Start Game");
+                    JPanel panel = new JPanel();
+                    panel.add(label);
+                    panel.add(startButton);
+                    d.add(panel);
+                    d.setSize(300, 150);
+                    d.setLocationRelativeTo(window);
+                    d.setVisible(true);
+                    //Event listener for start button
+                    startButton.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(java.awt.event.ActionEvent e) {
+                            try {
+                                oos.writeObject(new Packet("START", game, id));
+                                d.dispose();
+                            } catch (IOException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    });
+                    //Listen for new players to join until the start button is pressed
+                    while(!gameStarted){
+                        packet = (Packet) ois.readObject();
+                        //Increase player count when a new player joins
+                        if(packet.token.equals("NEW_PLAYER")) {
+                            numPlayers++;
+                            label.setText(String.format("Number of Players: %d/%d", numPlayers, totalPlayers));
+                            System.out.println("Number of Players: " + numPlayers);
+                            d.revalidate();
+                            d.repaint();
+                        }
+                        if(packet.token.equals("START")) {
+                            gameStarted = true;
+                        }
+                    }
+                }
+                else{
+                    //Dialog box for waiting for host to start game
+                    boolean gameStarted = false;
+                    Window window = SwingUtilities.windowForComponent(grid);
+                    JDialog d = new JDialog(window, "Host");
+                    JLabel label = new JLabel("Waiting for the host to start . . .", JLabel.CENTER);
+                    d.add(label);
+                    d.setSize(300, 150);
+                    d.setLocationRelativeTo(window);
+                    while (!gameStarted&&this.id!=1){
+                        d.setVisible(true);
+                        Packet packetIn = (Packet) ois.readObject();
+                        if(packetIn.token.equals("START")) {
+                            d.dispose();
+                            gameStarted = true;
+                        }
+                    }
+                }                  
             }
+            catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+            }   
+
+
 
             // Start the Read/write loop threads to sync game with server
             Thread readThread = new Thread(new ServerListener(id, ois, game, grid, this));
@@ -133,23 +212,22 @@ class ServerListener implements Runnable {
                 Packet packetIn = (Packet) ois.readObject();
 
                 switch (packetIn.token) {
-                    case "LOCK":
+                    case "LOCK" -> {
                         int squareIndex = packetIn.index;
                         int senderId = packetIn.senderId;
                         game.getGameSquare(squareIndex).acquireLock(senderId);
-                        break;
-                    case "DRAW":
+                    }
+                    case "DRAW" -> {
                         InputStream in = new ByteArrayInputStream(packetIn.bytes);
                         BufferedImage bufferedImage = ImageIO.read(in);
                         in.close();
-
                         // Avoid duplicate rendering of own square data
                         if (packetIn.senderId != id) {
                             game.changeSquare(packetIn.index, bufferedImage);
                             grid.updateImage(packetIn.index);
                             grid.repaintSquare(packetIn.index);
                         }
-                        break;
+                    }
                 }
             } catch (IOException e) {
                 break;

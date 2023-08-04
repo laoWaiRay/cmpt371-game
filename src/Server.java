@@ -62,7 +62,11 @@ public class Server extends Thread {
                     // Create and add new client connection to the list of connections
                     ClientConnection clientConnection = new ClientConnection(nextId, oos, ois);
                     clientList.add(clientConnection);
-                    System.out.println("Connected new client id: " + nextId);
+
+                    clientConnection.sendMessage("CONNECT", game, nextId);
+                    System.out.println("Sending new player packet to host");
+                    //Inform host that a new player has joined
+                    clientList.get(0).sendMessage("NEW_PLAYER", game, 0);
 
                     nextId++;
                     thread.start();
@@ -103,7 +107,6 @@ class ClientHandler implements Runnable {
         // Initial connection handling: Assign ID to client that is connecting
         try {
             oos.writeObject(new Packet("CONNECT", game, id));
-
             Packet packet = (Packet) ois.readObject();
             System.out.println("Received initial packet from sender id: " + packet.senderId);
         } catch (IOException | ClassNotFoundException e) {
@@ -115,33 +118,32 @@ class ClientHandler implements Runnable {
                 // READ
                 Packet packetIn = (Packet) ois.readObject();
                 int senderId = packetIn.senderId;
+
                 int squareIndex = packetIn.index;
-
-                switch (packetIn.token) {
-                    case "LOCK":
-                        System.out.println("GETTING LOCK");
-                        game.getGameSquare(squareIndex).acquireLock(senderId);
-                        break;
-                    case "DRAW":
-                        InputStream is = new ByteArrayInputStream(packetIn.bytes);
-                        BufferedImage bufferedImage = ImageIO.read(is);
-                        is.close();
-
+                InputStream is = new ByteArrayInputStream(packetIn.bytes);
+                BufferedImage bufferedImage = ImageIO.read(is);
+                is.close();
+                switch(packetIn.token){
+                    //Inform all clients to start
+                    case "START" -> {
+                        server.messageAllClients("START", game, senderId);
+                    }
+                    case "DRAW" -> {
                         game.changeSquare(packetIn.index, bufferedImage);
                         grid.updateImage(packetIn.index);
                         grid.repaintSquare(packetIn.index);
-                        break;
+                    }
+                    case "LOCK" -> {
+                        System.out.println("GETTING LOCK");
+                        game.getGameSquare(squareIndex).acquireLock(senderId);
+                    }
                 }
 
                 // WRITE
                 game.setLastChangedSquare(squareIndex);
-                switch(packetIn.token) {
-                    case "LOCK":
-                        server.messageAllClients("LOCK", game, senderId);
-                        break;
-                    case "DRAW":
-                        server.messageAllClients("DRAW", game, senderId);
-                        break;
+                switch (packetIn.token) {
+                    case "LOCK" -> server.messageAllClients("LOCK", game, senderId);
+                    case "DRAW" -> server.messageAllClients("DRAW", game, senderId);
                 }
                 // oos.writeObject(new Packet("DRAW", game, senderId));
             } catch (IOException error) {
@@ -149,7 +151,8 @@ class ClientHandler implements Runnable {
                 error.printStackTrace();
             } catch (ClassNotFoundException error) {
                 System.out.println("Error reading from object stream: Class not found");
-            }
+            }                
+
         }
     }
 }

@@ -66,7 +66,7 @@ class GameSquare {
 
     // Only allow one client to have access to the square at a time
     public void acquireLock(int clientId) {
-        if (lockHolderId != 0 || fullyColored) return;  // If someone else currently has the lock, give up
+        if (lockHolderId != 0 || fullyColored) return;
         lockHolderId = clientId;
     }
 
