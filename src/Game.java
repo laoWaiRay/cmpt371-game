@@ -16,37 +16,37 @@ public class Game implements Serializable {
         }
     }
 
-    public synchronized GameSquare getGameSquare(int id) {
+    public GameSquare getGameSquare(int id) {
         return squares[id];
     }
 
-    public synchronized void changeSquare(int index, BufferedImage newImage) {
+    public void changeSquare(int index, BufferedImage newImage) {
         squares[index].setImage(newImage);
         lastChangedSquare = index;
     }
 
-    public synchronized BufferedImage getSquareImage(int index) {
+    public BufferedImage getSquareImage(int index) {
         return squares[index].getImage();
     }
 
-    public synchronized int getLastChangedSquare() {
+    public int getLastChangedSquare() {
         return lastChangedSquare;
     }
 
-    public synchronized void setLastChangedSquare(int squareIndex) {
+    public void setLastChangedSquare(int squareIndex) {
         lastChangedSquare = squareIndex;
     }
 
-    public synchronized void setStillDrawing(boolean stillDrawing) {
+    public void setStillDrawing(boolean stillDrawing) {
         isStillDrawing = stillDrawing;
     }
 
-    public synchronized boolean getIsStillDrawing() {
+    public boolean getIsStillDrawing() {
         return isStillDrawing;
     }
 
     //checks all squares to see if any square is still blank/white 
-    public synchronized boolean isGameFinished(){
+    public boolean isGameFinished(){
         for (int i = 0; i < 25; i++){
             int rgb = getSquareImage(i).getRGB(50, 50);
             Color colour = new Color(rgb);
@@ -74,23 +74,23 @@ class GameSquare {
         lockHolderId = 0;
     }
 
-    public boolean hasAccess(int clientId) {
+    public synchronized boolean hasAccess(int clientId) {
         return clientId == lockHolderId;
     }
 
-    public void setImage(BufferedImage image) {
+    public synchronized void setImage(BufferedImage image) {
         this.image = image;
     }
 
-    public BufferedImage getImage() {
+    public synchronized BufferedImage getImage() {
         return image;
     }
 
-    public void setFullyColored(boolean fullyColored) {
+    public synchronized void setFullyColored(boolean fullyColored) {
         this.fullyColored = fullyColored;
     }
 
-    public boolean getFullyColored() {
+    public synchronized boolean getFullyColored() {
         return fullyColored;
     }
 }

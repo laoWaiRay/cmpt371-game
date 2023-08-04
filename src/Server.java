@@ -118,8 +118,8 @@ class ClientHandler implements Runnable {
                 // READ
                 Packet packetIn = (Packet) ois.readObject();
                 int senderId = packetIn.senderId;
-
                 int squareIndex = packetIn.index;
+
                 InputStream is = new ByteArrayInputStream(packetIn.bytes);
                 BufferedImage bufferedImage = ImageIO.read(is);
                 is.close();
