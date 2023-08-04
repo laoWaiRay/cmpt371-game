@@ -57,6 +57,55 @@ public class Game implements Serializable {
         }
         return true;
     }
+
+    public synchronized int[] scores(){
+        int[] score = new int[4];
+        for (int i = 0; i < 4; i++){
+            score[i] = 0;
+        }
+        for (int i = 0; i < 25; i++){
+            int rgb = getSquareImage(i).getRGB(50, 50);
+            Color colour = new Color(rgb);
+            if(colour.equals(Color.BLUE)){
+                score[0] += 1;
+            }
+            else if (colour.equals(Color.RED)){
+                score[1] += 1;
+            }
+            else if (colour.equals(Color.YELLOW)){
+                score[2] += 1;
+            }
+            else if (colour.equals(Color.GREEN)){
+                score[3] += 1;
+            }
+        }
+        return score;
+    }
+    public synchronized String winner(int[] s){
+        String winner = "Winner: ";
+        int max = s[0];
+        for (int i = 1; i < 4; i++){
+            if (s[i] > max){
+                max = s[i];
+            }
+        }
+        if (s[0] == max){
+            winner += "Blue ";
+        }
+        if (s[1] == max){
+            winner += "Red ";
+        }
+        if (s[2] == max){
+            winner += "Yellow ";
+        }
+        if (s[3] == max){
+            winner += "Green ";
+        }
+        return winner;
+    }
+
+
+
 }
 
 class GameSquare {
