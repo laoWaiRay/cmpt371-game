@@ -137,13 +137,22 @@ class ClientHandler implements Runnable {
                         System.out.println("GETTING LOCK");
                         game.getGameSquare(squareIndex).acquireLock(senderId);
                     }
+                    case "UNLOCK" -> {
+                        // Update square
+                        game.changeSquare(packetIn.index, bufferedImage);
+                        grid.updateImage(packetIn.index);
+                        grid.repaintSquare(packetIn.index);
+                        // Unlock square
+                        System.out.println("RELEASE LOCK");
+                        game.getGameSquare(squareIndex).releaseLock();
+                    }
                 }
 
                 // WRITE
                 game.setLastChangedSquare(squareIndex);
                 switch (packetIn.token) {
                     case "LOCK" -> server.messageAllClients("LOCK", game, senderId);
-                    case "DRAW" -> server.messageAllClients("DRAW", game, senderId);
+                    case "DRAW", "UNLOCK" -> server.messageAllClients("DRAW", game, senderId);
                 }
                 // oos.writeObject(new Packet("DRAW", game, senderId));
             } catch (IOException error) {

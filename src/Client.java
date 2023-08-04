@@ -243,7 +243,6 @@ class UserInputListener implements Runnable {
     private ObjectOutputStream oos;
     private Game game;
     private Object lock;
-    private String tokenMessage;
     private Client client;
 
     public UserInputListener(int id, ObjectOutputStream oos, Game game, Object lock, Client client) {

@@ -131,7 +131,7 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             g.dispose();
             game.changeSquare(id, updatedImage);
             game.setStillDrawing(true);
-            client.setTokenMessage("DRAW");
+            client.setTokenMessage("UNLOCK");
             lock.notifyAll();
             repaint();
             System.out.println("Client " + client.getClientId() + " Score: " + client.getScore());
