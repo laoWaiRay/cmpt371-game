@@ -151,8 +151,9 @@ class ClientHandler implements Runnable {
                 // WRITE
                 game.setLastChangedSquare(squareIndex);
                 switch (packetIn.token) {
+                    case "DRAW" -> server.messageAllClients("DRAW", game, senderId);
                     case "LOCK" -> server.messageAllClients("LOCK", game, senderId);
-                    case "DRAW", "UNLOCK" -> server.messageAllClients("DRAW", game, senderId);
+                    case "UNLOCK" -> server.messageAllClients("UNLOCK", game, senderId);
                 }
                 // oos.writeObject(new Packet("DRAW", game, senderId));
             } catch (IOException error) {

@@ -38,7 +38,7 @@ public class Client extends Thread {
 
     @Override
     public void run() {
-        try (Socket socket = new Socket(InetAddress.getByName("127.0.0.1"), port)) {
+        try (Socket socket = new Socket(InetAddress.getByName("192.168.1.70"), port)) {
             System.out.println("Connected to server!");
             OutputStream os = socket.getOutputStream();
             InputStream is = socket.getInputStream();
@@ -227,6 +227,19 @@ class ServerListener implements Runnable {
                             grid.updateImage(packetIn.index);
                             grid.repaintSquare(packetIn.index);
                         }
+                    }
+                    case "UNLOCK" -> {
+                        InputStream in = new ByteArrayInputStream(packetIn.bytes);
+                        BufferedImage bufferedImage = ImageIO.read(in);
+                        in.close();
+                        // Avoid duplicate rendering of own square data
+                        if (packetIn.senderId != id) {
+                            game.changeSquare(packetIn.index, bufferedImage);
+                            grid.updateImage(packetIn.index);
+                            grid.repaintSquare(packetIn.index);
+                        }
+                        int squareIndex = packetIn.index;
+                        game.getGameSquare(squareIndex).releaseLock();
                     }
                 }
             } catch (IOException e) {
