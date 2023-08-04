@@ -237,6 +237,7 @@ class ServerListener implements Runnable {
                             game.changeSquare(packetIn.index, bufferedImage);
                             grid.updateImage(packetIn.index);
                             grid.repaintSquare(packetIn.index);
+                            System.out.println("HERE" + " Sender id: " + packetIn.senderId + ", my id: " + id);
                         }
                         int squareIndex = packetIn.index;
                         game.getGameSquare(squareIndex).releaseLock();

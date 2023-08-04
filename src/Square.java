@@ -109,7 +109,6 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
     @Override
     public void mouseReleased(MouseEvent e) {
         if (!game.getGameSquare(id).hasAccess(client.getClientId())) return;
-        client.setTokenMessage("DRAW");
 
         double percentColored = calculateColoredPercentage();
         BufferedImage updatedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -124,17 +123,17 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
 
         g.fillRect(0, 0, width, height);
         img = updatedImage;
+        g.dispose();
         repaint();
 
         // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
         synchronized (lock) {
-            g.dispose();
-            game.changeSquare(id, updatedImage);
+            game.changeSquare(id, img);
             game.setStillDrawing(true);
             client.setTokenMessage("UNLOCK");
             game.setLastChangedSquare(id);
             lock.notifyAll();
-            repaint();
+            // repaint();
             System.out.println("Client " + client.getClientId() + " Score: " + client.getScore());
             if(game.isGameFinished()){
                 System.out.println("Game Over");
