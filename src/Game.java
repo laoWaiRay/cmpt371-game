@@ -65,12 +65,12 @@ class GameSquare {
     private boolean fullyColored = false;
 
     // Only allow one client to have access to the square at a time
-    public void acquireLock(int clientId) {
+    public synchronized void acquireLock(int clientId) {
         if (lockHolderId != 0 || fullyColored) return;
         lockHolderId = clientId;
     }
 
-    public void releaseLock() {
+    public synchronized void releaseLock() {
         lockHolderId = 0;
     }
 
