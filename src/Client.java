@@ -5,7 +5,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -14,14 +13,13 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 public class Client extends Thread {
-    private int port;
+    private final int port;
     private int id;
     private ObjectInputStream ois;
     private ObjectOutputStream oos;
-    private Game game;
-    private Grid grid;
-    private Object lock;
-    volatile boolean isRunning = true;
+    private final Game game;
+    private final Grid grid;
+    private final Object lock;
     private String colorName;
     private Color color;
     private String tokenMessage = "DRAW";
@@ -36,26 +34,31 @@ public class Client extends Thread {
 
     @Override
     public void run() {
+        // Opening a socket connection to the server
+        // For demo purposes, we have hard coded the IP address of the server to our internal IP address.
         try (Socket socket = new Socket(InetAddress.getByName("192.168.1.70"), port)) {
-            System.out.println("Connected to server!");
+            // Acquiring input and output streams for the client
             OutputStream os = socket.getOutputStream();
             InputStream is = socket.getInputStream();
             oos = new ObjectOutputStream(os);
             ois = new ObjectInputStream(is);
 
-            // Initial connection handling: Receive client ID from the server
+            // Initial connection handling: Receive client ID from the server, so that it can be used
+            // in future messages sent from this client to identify it with the server.
             try {
                 Packet packet = (Packet) ois.readObject();
                 id = packet.senderId;
-                
+
+                // Color of the client's pen is set according to its client id on the server
                 setColor();
-                if(packet.token.equals("CONNECT")) {
+
+                // Show a hello message on initial connection with server
+                if (packet.token.equals("CONNECT")) {
                     JOptionPane.showMessageDialog(grid, "You are player " + id + "!\n Your color is " + colorName + "!");
                 }
-                oos.writeObject(new Packet("CONNECT", game, id));
 
                 // Dialog box for host to start game (Assuming host id is always 1)
-                if(this.id==1) {
+                if (this.id == 1) {
                     int numPlayers = 0;
                     int totalPlayers = 4;
                     boolean gameStarted = false;
@@ -71,7 +74,8 @@ public class Client extends Thread {
                     d.setSize(300, 150);
                     d.setLocationRelativeTo(window);
                     d.setVisible(true);
-                    //Event listener for start button
+
+                    // Event listener for start button
                     startButton.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -83,9 +87,11 @@ public class Client extends Thread {
                             }
                         }
                     });
-                    //Listen for new players to join until the start button is pressed
+
+                    // Listen for new players to join until the start button is pressed
                     while(!gameStarted){
                         packet = (Packet) ois.readObject();
+
                         //Increase player count when a new player joins
                         if(packet.token.equals("NEW_PLAYER")) {
                             numPlayers++;
@@ -100,7 +106,7 @@ public class Client extends Thread {
                     }
                 }
                 else{
-                    //Dialog box for waiting for host to start game
+                    // Dialog box for waiting for host to start game
                     boolean gameStarted = false;
                     Window window = SwingUtilities.windowForComponent(grid);
                     JDialog d = new JDialog(window, "Host");
@@ -122,9 +128,7 @@ public class Client extends Thread {
                     e.printStackTrace();
             }   
 
-
-
-            // Start the Read/write loop threads to sync game with server
+            // Start the Read/write loop threads to sync client and server game states
             Thread readThread = new Thread(new ServerListener(id, ois, game, grid, this));
             Thread writeThread = new Thread(new UserInputListener(id, oos, game, lock, this));
 
@@ -154,13 +158,9 @@ public class Client extends Thread {
                 new ColorPair("GREEN", Color.GREEN)
         };
 
-        // id - 1 because the server assigns ids starting at 1
+        // set to id - 1 because the server assigns ids starting from 1
         colorName = colorPairs[id - 1].name;
         color = colorPairs[id - 1].color;
-    }
-
-    public String getColorName() {
-        return colorName;
     }
 
     public Color getColor() {
@@ -180,16 +180,19 @@ public class Client extends Thread {
     }
 
     public void setLastChangedSquare(int index) { lastChangedSquare = index; }
+
     public int getLastChangedSquare() { return lastChangedSquare; }
 
 }
 
+// The first of two sub-threads running on the Client. This thread is responsible for
+// listening to the Server for messages and then updating the Client's game state accordingly.
 class ServerListener implements Runnable {
-    private int id;
-    private ObjectInputStream ois;
-    private Game game;
-    private Grid grid;
-    private Client client;
+    private final int id;
+    private final ObjectInputStream ois;
+    private final Game game;
+    private final Grid grid;
+    private final Client client;
 
     public ServerListener(int id, ObjectInputStream ois, Game game, Grid grid, Client client) {
         this.id = id;
@@ -203,20 +206,29 @@ class ServerListener implements Runnable {
     public void run() {
         while (true) {
             try {
-                // READ FROM SERVER AND UPDATE CLIENT GAME STATE
+                // DO FOREVER: Read messages from the server and update client game state
                 Packet packetIn = (Packet) ois.readObject();
 
+                // IMPORTANT !
+                // Each packet contains a different TOKEN message which identifies which action the client should take
                 switch (packetIn.token) {
+                    // This message indicates that another player has taken a square and this client cannot
+                    // access it
                     case "LOCK" -> {
                         int squareIndex = packetIn.index;
                         int senderId = packetIn.senderId;
                         game.getGameSquare(squareIndex).acquireLock(senderId);
                     }
+
+                    // This message indicates that another player has drawn on a square and the client should
+                    // update its board to mirror the server's game state
                     case "DRAW" -> {
                         InputStream in = new ByteArrayInputStream(packetIn.bytes);
                         BufferedImage bufferedImage = ImageIO.read(in);
                         in.close();
-                        // Avoid duplicate rendering of own square data
+
+                        // Avoid duplicate rendering of own square data (a client already draws its own UI - as
+                        // such, there is no need to update it again from the server's broadcast)
                         if (packetIn.senderId != id) {
                             game.changeSquare(packetIn.index, bufferedImage);
                             client.setLastChangedSquare(id);
@@ -224,6 +236,9 @@ class ServerListener implements Runnable {
                             grid.repaintSquare(packetIn.index);
                         }
                     }
+
+                    // This message indicates that another player is no longer using a square, and the lock
+                    // should be released
                     case "UNLOCK" -> {
                         InputStream in = new ByteArrayInputStream(packetIn.bytes);
                         BufferedImage bufferedImage = ImageIO.read(in);
@@ -238,9 +253,15 @@ class ServerListener implements Runnable {
                         int squareIndex = packetIn.index;
                         game.getGameSquare(squareIndex).releaseLock();
                     }
+
+                    // This message indicates that a square has been fully colored in and should be
+                    // permanently locked
                     case "FULLY_COLOR" -> {
                         game.setSquareFullyColored(packetIn.index);
                     }
+
+                    // This message indicates that the game is over and the client should show a popup
+                    // message
                     case "GAMEOVER" -> {
                         JOptionPane.showMessageDialog(grid,game.winner(game.scores()));
                     }
@@ -254,12 +275,14 @@ class ServerListener implements Runnable {
     }
 }
 
+// The second of two sub-threads running on the Client. This thread is responsible for
+// listening for any changes to the client's game state and retransmitting them for the server to mirror.
 class UserInputListener implements Runnable {
-    private int id;
-    private ObjectOutputStream oos;
-    private Game game;
-    private Object lock;
-    private Client client;
+    private final int id;
+    private final ObjectOutputStream oos;
+    private final Game game;
+    private final Object lock;
+    private final Client client;
 
     public UserInputListener(int id, ObjectOutputStream oos, Game game, Object lock, Client client) {
         this.id = id;
@@ -271,7 +294,9 @@ class UserInputListener implements Runnable {
 
     @Override
     public void run() {
-        // WRITE LOOP
+        // WRITE LOOP - User mouse actions in the Square class cause different TOKEN messages
+        // to be set, and then releases the lock so that the packet is sent to the server with
+        // the data needed for the server to update it's game state.
         while (true) {
             synchronized (lock) {
                 try {
@@ -281,14 +306,11 @@ class UserInputListener implements Runnable {
                 }
             }
 
-            if (game.getIsStillDrawing() || true) {
-                try {
-                    System.out.println(client.getTokenMessage() + " at square: " + client.getLastChangedSquare());
-                    oos.writeObject(new Packet(client.getTokenMessage(), game, client.getLastChangedSquare(), id));
-                    game.setStillDrawing(false);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            try {
+                // Creating the packet and sending it to server
+                oos.writeObject(new Packet(client.getTokenMessage(), game, client.getLastChangedSquare(), id));
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

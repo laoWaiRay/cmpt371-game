@@ -64,7 +64,7 @@ public class Server extends Thread {
                 try {
                     Socket clientSocket = serverSocket.accept();
 
-                    // We are using object streams for the data we are sending - see Packet class
+                    // We are using object streams for the data we are sending - see Packet class for more details
                     ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                     ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
 
@@ -75,15 +75,14 @@ public class Server extends Thread {
                     ClientConnection clientConnection = new ClientConnection(nextId, oos);
                     clientList.add(clientConnection);
 
-                    // On initial connection to a new client, we just send a packet with a greeting message
+                    // On initial connection to a new client, we just send them a packet with a greeting message
                     clientConnection.sendMessage("CONNECT", game, nextId);
-                    System.out.println("Sending new player packet to host");
 
                     // The first client to connect should also be the host. Here we are informing them
-                    // that a new player has joined the game
+                    // whenever a new player has joined the game
                     clientList.get(0).sendMessage("NEW_PLAYER", game, 0);
 
-                    // Increment the id for the next client and start the client handler thread
+                    // Increment the id for the next client and start the client handler thread for this client
                     nextId++;
                     thread.start();
                 } catch (IOException error) {
@@ -126,7 +125,8 @@ class ClientHandler implements Runnable {
                 BufferedImage bufferedImage = ImageIO.read(is);
                 is.close();
 
-                // Each packet contains a different token which identifies which action the server should take
+                // IMPORTANT !
+                // Each packet contains a different TOKEN message which identifies which action the server should take
                 switch(packetIn.token){
                     // Inform all clients to start the game
                     case "START" -> {

@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 public class Game implements Serializable {
     private final GameSquare[] squares = new GameSquare[25];
-    private boolean isStillDrawing = false;
     private int numFullyColoredSquares = 0;
 
     public Game() {
@@ -23,14 +22,6 @@ public class Game implements Serializable {
 
     public BufferedImage getSquareImage(int index) {
         return squares[index].getImage();
-    }
-
-    public void setStillDrawing(boolean stillDrawing) {
-        isStillDrawing = stillDrawing;
-    }
-
-    public boolean getIsStillDrawing() {
-        return isStillDrawing;
     }
 
     public void setSquareFullyColored(int squareId) {

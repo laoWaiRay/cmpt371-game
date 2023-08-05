@@ -80,7 +80,6 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
                 g.dispose();
                 game.changeSquare(id, img);
                 client.setLastChangedSquare(id);
-                game.setStillDrawing(true);
                 lock.notifyAll();
                 repaint();
             }
@@ -132,7 +131,6 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
         synchronized (lock) {
             game.changeSquare(id, img);
-            game.setStillDrawing(true);
             client.setTokenMessage("UNLOCK");
             client.setLastChangedSquare(id);
             lock.notifyAll();
@@ -141,11 +139,8 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
 
     @Override
     public void mousePressed (MouseEvent e) {
-    /* TODO - 2023/7/15 | 17:41 | raymondly
-    *   LOCK THE SQUARE WHILE A USER IS DRAGGING MOUSE INSIDE OF IT
-    * */
+        // Whenever the mouse is pressed, attempt to acquire the lock for this square
         synchronized (lock) {
-            System.out.println("DEBUG2 sq id" + String.valueOf(id));
             client.setLastChangedSquare(id);
             client.setTokenMessage("LOCK");
             lock.notifyAll();
