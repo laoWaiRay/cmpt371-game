@@ -4,6 +4,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 
+// Packets employ token-based messaging. In addition to a token, they also send
+// a byte array containing the image for a square, the sender ID, and the index of
+// the square that is being modified (if applicable)
+//
+// Tokens used include: CONNECT, START, NEW_PLAYER, DRAW, LOCK, UNLOCK, and GAMEOVER
 public class Packet implements Serializable {
     String token;
     byte[] bytes;
@@ -14,10 +19,6 @@ public class Packet implements Serializable {
         this.token = token;
         this.senderId = senderId;
         bytes = bufferedImageToByteArray(game.getSquareImage(this.index));
-        // System.out.println("PACKET MADE WITH SQUARE INDEX");
-        // System.out.println(this.index);
-        // System.out.println("AND TOKEN");
-        // System.out.println(this.token);
     }
 
     public Packet(String token, Game game, int squareIndex, int senderId) {
