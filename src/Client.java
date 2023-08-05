@@ -4,7 +4,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JDialog;
 
 import java.awt.*;
@@ -13,7 +12,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.util.Timer;
 
 public class Client extends Thread {
     private int port;
@@ -38,7 +36,7 @@ public class Client extends Thread {
 
     @Override
     public void run() {
-        try (Socket socket = new Socket(InetAddress.getByName("127.0.0.1"), port)) {
+        try (Socket socket = new Socket(InetAddress.getByName("192.168.1.70"), port)) {
             System.out.println("Connected to server!");
             OutputStream os = socket.getOutputStream();
             InputStream is = socket.getInputStream();
@@ -244,9 +242,9 @@ class ServerListener implements Runnable {
                         int squareIndex = packetIn.index;
                         game.getGameSquare(squareIndex).releaseLock();
                     }
-                }
-                if (game.isGameFinished()){
-                    JOptionPane.showMessageDialog(grid,game.winner(game.scores()));
+                    case "GAMEOVER" -> {
+                        JOptionPane.showMessageDialog(grid,game.winner(game.scores()));
+                    }
                 }
             } catch (IOException e) {
                 break;

@@ -137,18 +137,6 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             client.setLastChangedSquare(id);
             System.out.println("DEBUGGING last square id " + String.valueOf(id));
             lock.notifyAll();
-            // repaint();
-            if(game.isGameFinished()){
-                //System.out.println("Game Over");
-                int [] scores = game.scores();
-                for(int i =0; i<4;i++){
-                    System.out.println(scores[i]);
-                }
-                String s = game.winner(scores);
-                System.out.println("Winner: " + s);
-                
-                //change screen to game over screen with winner shown
-            }
         }
     }
 

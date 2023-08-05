@@ -1,4 +1,5 @@
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.ServerSocket;
@@ -8,10 +9,12 @@ import java.util.ArrayList;
 public class Server extends Thread {
     private ServerSocket serverSocket;
     int port;
-    private Game game;
-    private Grid grid;
-    private int nextId = 1;
-    private ArrayList<ClientConnection> clientList = new ArrayList<ClientConnection>();
+    private final Game game;    // contains the current game state
+    private final Grid grid;    // contains methods for updating the grid UI
+    private int nextId = 1;     // id assigned to the next client who connects
+
+    // This is a list of all connected clients
+    private final ArrayList<ClientConnection> clientList = new ArrayList<ClientConnection>();
 
     public Server(int port, Game game, Grid grid) {
         this.port = port;
@@ -20,6 +23,7 @@ public class Server extends Thread {
         startServerSocket();
     }
 
+    // Opens the server socket on the host's IP address and default port 8080
     private void startServerSocket() {
         try {
             serverSocket = new ServerSocket(port);
@@ -29,24 +33,26 @@ public class Server extends Thread {
         }
     }
 
+    // Closes the server socket
     public void stopServerSocket() {
         try {
-            System.out.println("Closing server socket...");
             serverSocket.close();
         } catch (IOException error) {
             System.out.println("Could not close server socket");
         }
     }
 
+    // Constructs and broadcasts the same packet to all clients
     public synchronized void messageAllClients(String token, Game game, int senderId) {
         for (ClientConnection client : clientList) {
             client.sendMessage(token, game, senderId);
         }
     }
 
+    // Constructs and broadcasts the same packet to all clients, including the changed square ID
+    // which the client can use to update their UI
     public synchronized void messageAllClients(String token, Game game, int squareIndex, int senderId) {
         for (ClientConnection client : clientList) {
-            System.out.println("Messaging client id: " + client.getId());
             client.sendMessage(token, game, squareIndex, senderId);
         }
     }
@@ -66,11 +72,12 @@ public class Server extends Thread {
                     Thread thread = new Thread(new ClientHandler(clientSocket, ois, oos, game, grid, nextId, this));
 
                     // Create and add new client connection to the list of connections
-                    ClientConnection clientConnection = new ClientConnection(nextId, oos, ois);
+                    ClientConnection clientConnection = new ClientConnection(nextId, oos);
                     clientList.add(clientConnection);
 
                     clientConnection.sendMessage("CONNECT", game, nextId);
                     System.out.println("Sending new player packet to host");
+
                     //Inform host that a new player has joined
                     clientList.get(0).sendMessage("NEW_PLAYER", game, 0);
 
@@ -129,41 +136,53 @@ class ClientHandler implements Runnable {
                 InputStream is = new ByteArrayInputStream(packetIn.bytes);
                 BufferedImage bufferedImage = ImageIO.read(is);
                 is.close();
-                System.out.println("PACKET:");
-                System.out.println(packetIn.token);
-                System.out.println(packetIn.index);
+
                 switch(packetIn.token){
                     //Inform all clients to start
                     case "START" -> {
                         server.messageAllClients("START", game, senderId);
                     }
                     case "DRAW" -> {
+                        // Update square with new data from client
                         game.changeSquare(packetIn.index, bufferedImage);
                         grid.updateImage(packetIn.index);
                         grid.repaintSquare(packetIn.index);
                     }
                     case "LOCK" -> {
-                        System.out.println("GETTING LOCK at square " + String.valueOf(squareIndex));
+                        // Attempt to acquire a lock on the square using the client's ID
                         game.getGameSquare(squareIndex).acquireLock(senderId);
                     }
                     case "UNLOCK" -> {
-                        // Update square
+                        // Update square with new data from client
                         game.changeSquare(packetIn.index, bufferedImage);
                         grid.updateImage(packetIn.index);
                         grid.repaintSquare(packetIn.index);
-                        // Unlock square
-                        System.out.println("RELEASE LOCK");
+
+                        // Check if square is fully colored - if yes, lock square permanently
+                        int rgb = bufferedImage.getRGB(50, 50);
+                        Color colour = new Color(rgb);
+                        Color def = new Color(0, 0,0);
+                        if (!(colour.equals(Color.WHITE) | colour.equals(def))){
+                            // Setting the square to fully colored locks it forever
+                            game.setSquareFullyColored(packetIn.index);
+                        }
+
+                        // Unlock square (if the square is fully colored, this doesn't unlock it)
                         game.getGameSquare(squareIndex).releaseLock();
+
+                        // Check if game is over and inform all clients
+                        if (game.isGameFinished()) {
+                            server.messageAllClients("GAMEOVER", game, 0);
+                        }
                     }
                 }
 
-                // WRITE
+                // WRITE - broadcast new game state to all clients
                 switch (packetIn.token) {
                     case "DRAW" -> server.messageAllClients("DRAW", game, squareIndex, senderId);
                     case "LOCK" -> server.messageAllClients("LOCK", game, squareIndex, senderId);
                     case "UNLOCK" -> server.messageAllClients("UNLOCK", game, squareIndex, senderId);
                 }
-                // oos.writeObject(new Packet("DRAW", game, senderId));
             } catch (IOException error) {
                 System.out.println("Error reading from object stream");
                 error.printStackTrace();
@@ -178,16 +197,13 @@ class ClientHandler implements Runnable {
 class ClientConnection {
     private int id;
     private ObjectOutputStream oos;
-    private ObjectInputStream ois;
-    private String color;
 
-    public ClientConnection(int id, ObjectOutputStream oos, ObjectInputStream ois) {
+    public ClientConnection(int id, ObjectOutputStream oos) {
         this.id = id;
         this.oos = oos;
-        this.ois = ois;
     }
 
-    // Sends a message from the server to the client
+    // Constructs a packet and sends it from the server to this client
     public void sendMessage(String token, Game game, int senderId) {
         try {
             oos.writeObject(new Packet(token, game, senderId));
@@ -196,6 +212,7 @@ class ClientConnection {
         }
     }
 
+    // Sends a message from the server to the client with a specific square id for updating
     public void sendMessage(String token, Game game, int squareIndex, int senderId) {
         try {
             oos.writeObject(new Packet(token, game, squareIndex, senderId));
@@ -204,6 +221,7 @@ class ClientConnection {
         }
     }
 
+    // Returns the id of the connected client
     public int getId() {
         return id;
     }

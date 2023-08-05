@@ -56,9 +56,7 @@ public class ConnectionMenu extends JPanel {
         server.start();
     };
 
-    private final ActionListener serverStopHandler = e -> {
-        server.stopServerSocket();
-    };
+    private final ActionListener serverStopHandler = e -> server.stopServerSocket();
 
     private final ActionListener clientStartHandler = e -> {
         client = new Client(8080, game, grid, lock);

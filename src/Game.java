@@ -1,13 +1,11 @@
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.Serializable;
-import java.awt.Graphics;
-
-import javax.swing.JFrame;
 
 public class Game implements Serializable {
-    private GameSquare[] squares = new GameSquare[25];
+    private final GameSquare[] squares = new GameSquare[25];
     private boolean isStillDrawing = false;
+    private int numFullyColoredSquares = 0;
 
     public Game() {
         for (int i = 0; i < 25; i++) {
@@ -35,17 +33,14 @@ public class Game implements Serializable {
         return isStillDrawing;
     }
 
+    public void setSquareFullyColored(int squareId) {
+        squares[squareId].setFullyColored();
+        numFullyColoredSquares++;
+    }
+
     //checks all squares to see if any square is still blank/white 
     public boolean isGameFinished(){
-        for (int i = 0; i < 25; i++){
-            int rgb = getSquareImage(i).getRGB(50, 50);
-            Color colour = new Color(rgb);
-            Color def = new Color(0, 0,0);
-            if(colour.equals(Color.WHITE) | colour.equals(def)){
-                return false;
-            }
-        }
-        return true;
+        return numFullyColoredSquares == 25;
     }
 
     public synchronized int[] scores(){
@@ -93,16 +88,13 @@ public class Game implements Serializable {
         }
         return winner;
     }
-
-
-
 }
 
 class GameSquare {
     private BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
     private int lockHolderId = 0;   // Client Ids start from 1
     private boolean fullyColored = false;
-    private int squareId;
+    private final int squareId;
 
     public GameSquare(int squareId) {
         this.squareId = squareId;
@@ -117,7 +109,6 @@ class GameSquare {
     }
 
     public synchronized void releaseLock() {
-        System.out.println("Releasing lock for square: " + String.valueOf(squareId));
         lockHolderId = 0;
     }
 
@@ -133,11 +124,7 @@ class GameSquare {
         return image;
     }
 
-    public synchronized void setFullyColored(boolean fullyColored) {
-        this.fullyColored = fullyColored;
-    }
-
-    public synchronized boolean getFullyColored() {
-        return fullyColored;
+    public synchronized void setFullyColored() {
+        this.fullyColored = true;
     }
 }
