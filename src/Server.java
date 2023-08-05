@@ -38,13 +38,13 @@ public class Server extends Thread {
         }
     }
 
-    public void messageAllClients(String token, Game game, int senderId) {
+    public synchronized void messageAllClients(String token, Game game, int senderId) {
         for (ClientConnection client : clientList) {
             client.sendMessage(token, game, senderId);
         }
     }
 
-    public void messageAllClients(String token, Game game, int squareIndex, int senderId) {
+    public synchronized void messageAllClients(String token, Game game, int squareIndex, int senderId) {
         for (ClientConnection client : clientList) {
             System.out.println("Messaging client id: " + client.getId());
             client.sendMessage(token, game, squareIndex, senderId);
