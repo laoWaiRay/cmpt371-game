@@ -50,10 +50,11 @@ public class Client extends Thread {
                 
                 setColor();
                 if(packet.token.equals("CONNECT")) {
-                        JOptionPane.showMessageDialog(grid, "You are player " + id + "!\n Your color is " + colorName + "!");
+                    JOptionPane.showMessageDialog(grid, "You are player " + id + "!\n Your color is " + colorName + "!");
                 }
                 oos.writeObject(new Packet("CONNECT", game, id));
-                //Dialog box for host to start game (Assuming host id is always 1)
+
+                // Dialog box for host to start game (Assuming host id is always 1)
                 if(this.id==1) {
                     int numPlayers = 0;
                     int totalPlayers = 4;
@@ -204,11 +205,6 @@ class ServerListener implements Runnable {
             try {
                 // READ FROM SERVER AND UPDATE CLIENT GAME STATE
                 Packet packetIn = (Packet) ois.readObject();
-
-                System.out.println("Got server packet from sender: " + String.valueOf(packetIn.senderId));
-                System.out.println("Square is: " + String.valueOf(packetIn.index));
-                if (packetIn.token != null)
-                    System.out.println("Action is: " + packetIn.token);
 
                 switch (packetIn.token) {
                     case "LOCK" -> {

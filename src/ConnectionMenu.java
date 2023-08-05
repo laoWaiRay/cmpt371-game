@@ -52,7 +52,7 @@ public class ConnectionMenu extends JPanel {
     }
 
     private final ActionListener serverStartHandler = e -> {
-        server = new Server(8080, game, grid);
+        server = new Server(8080, game);
         server.start();
     };
 

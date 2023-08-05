@@ -8,18 +8,16 @@ import java.util.ArrayList;
 
 public class Server extends Thread {
     private ServerSocket serverSocket;
-    int port;
+    int port;   // default is 8080
     private final Game game;    // contains the current game state
-    private final Grid grid;    // contains methods for updating the grid UI
     private int nextId = 1;     // id assigned to the next client who connects
 
     // This is a list of all connected clients
     private final ArrayList<ClientConnection> clientList = new ArrayList<ClientConnection>();
 
-    public Server(int port, Game game, Grid grid) {
+    public Server(int port, Game game) {
         this.port = port;
         this.game = game;
-        this.grid = grid;
         startServerSocket();
     }
 
@@ -57,30 +55,35 @@ public class Server extends Thread {
         }
     }
 
-    // Accept client connections on a new thread to not block the stop call
+    // Accept client connections on a new thread to not block the stop server call
     @Override
     public void run() {
-        // Listen for client connections and create new threads
+        // DO FOREVER LOOP: Listen for client connections and create new threads to handle each client
         Thread serverSocketHandler = new Thread(() -> {
             while (true) {
                 try {
                     Socket clientSocket = serverSocket.accept();
-                    System.out.println("Connected to new client");
+
+                    // We are using object streams for the data we are sending - see Packet class
                     ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
                     ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
 
-                    Thread thread = new Thread(new ClientHandler(clientSocket, ois, oos, game, grid, nextId, this));
+                    // Creating the client handler thread for the newly connected client
+                    Thread thread = new Thread(new ClientHandler(ois, game, this));
 
-                    // Create and add new client connection to the list of connections
+                    // Create and add new client (with a unique id) to the list of connected clients
                     ClientConnection clientConnection = new ClientConnection(nextId, oos);
                     clientList.add(clientConnection);
 
+                    // On initial connection to a new client, we just send a packet with a greeting message
                     clientConnection.sendMessage("CONNECT", game, nextId);
                     System.out.println("Sending new player packet to host");
 
-                    //Inform host that a new player has joined
+                    // The first client to connect should also be the host. Here we are informing them
+                    // that a new player has joined the game
                     clientList.get(0).sendMessage("NEW_PLAYER", game, 0);
 
+                    // Increment the id for the next client and start the client handler thread
                     nextId++;
                     thread.start();
                 } catch (IOException error) {
@@ -94,41 +97,27 @@ public class Server extends Thread {
     }
 }
 
+// This is the logic for handling the clients in each of their respective threads
 class ClientHandler implements Runnable {
-    private final Socket socket;
     private final ObjectInputStream ois;
-    private final ObjectOutputStream oos;
-    private Game game;
-    private Grid grid;
-    private int id;
-    private Server server;
+    private final Game game;
+    private final Server server;
 
-    public ClientHandler(Socket socket, ObjectInputStream ois, ObjectOutputStream oos, Game game,
-                         Grid grid, int id, Server server) {
-        this.socket = socket;
+    public ClientHandler(ObjectInputStream ois, Game game, Server server) {
         this.ois = ois;
-        this.oos = oos;
         this.game = game;
-        this.grid = grid;
-        this.id = id;
         this.server = server;
     }
 
     @Override
     public void run() {
-        System.out.println("ClientHandler started for client: " + socket.getInetAddress());
-        // Initial connection handling: Assign ID to client that is connecting
-        try {
-            oos.writeObject(new Packet("CONNECT", game, id));
-            Packet packet = (Packet) ois.readObject();
-            System.out.println("Received initial packet from sender id: " + packet.senderId);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
+        // The job of the client handler is to listen to individual clients for any messages,
+        // update the server's game state accordingly, and then broadcast the server's version
+        // of the game state to all clients
         while (true) {
             try {
-                // READ
+                // READ - packets from clients contain the ID of the sender, a token message, the index of the square
+                // that they are updating, and the image of the square according to the client
                 Packet packetIn = (Packet) ois.readObject();
                 int senderId = packetIn.senderId;
                 int squareIndex = packetIn.index;
@@ -137,26 +126,28 @@ class ClientHandler implements Runnable {
                 BufferedImage bufferedImage = ImageIO.read(is);
                 is.close();
 
+                // Each packet contains a different token which identifies which action the server should take
                 switch(packetIn.token){
-                    //Inform all clients to start
+                    // Inform all clients to start the game
                     case "START" -> {
                         server.messageAllClients("START", game, senderId);
                     }
+                    // This is sent to update a specific square in the server's game state with a new image
                     case "DRAW" -> {
                         // Update square with new data from client
                         game.changeSquare(packetIn.index, bufferedImage);
-                        grid.updateImage(packetIn.index);
-                        grid.repaintSquare(packetIn.index);
                     }
+                    // This token is sent to indicate that a client is trying to acquire the mutex for
+                    // a given square. The lock is only acquired if no other client is using it AND the square
+                    // has not been fully colored.
                     case "LOCK" -> {
                         // Attempt to acquire a lock on the square using the client's ID
                         game.getGameSquare(squareIndex).acquireLock(senderId);
                     }
+                    // This token informs the server that a client has finished and is no longer using a square.
                     case "UNLOCK" -> {
-                        // Update square with new data from client
+                        // Update server game state with new data from client
                         game.changeSquare(packetIn.index, bufferedImage);
-                        grid.updateImage(packetIn.index);
-                        grid.repaintSquare(packetIn.index);
 
                         // Check if square is fully colored - if yes, lock square permanently
                         int rgb = bufferedImage.getRGB(50, 50);
@@ -196,9 +187,11 @@ class ClientHandler implements Runnable {
     }
 }
 
+// This is a simple class to represent clients, with a helper method which is used in the
+// server's broadcast method
 class ClientConnection {
-    private int id;
-    private ObjectOutputStream oos;
+    private final int id;
+    private final ObjectOutputStream oos;
 
     public ClientConnection(int id, ObjectOutputStream oos) {
         this.id = id;
