@@ -1,18 +1,17 @@
+// *  Main driver file for initializing the multiplayer game, "Deny and Conquer"
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 public class Main extends JFrame {
-    private MenuBar menuBar = new MenuBar();
-    private ConnectionMenu connectionMenu;
-    private Grid grid;
-    private Game game = new Game();
+    private final MenuBar menuBar = new MenuBar();
+    private final ConnectionMenu connectionMenu;
+    private final Grid grid;
     private Client client;
-    private Server server;
-    private final Object lock = new Object();
 
     public Main() {
-        super("371 Game");
+        super("CMPT 371 Deny and Conquer");
+        Object lock = new Object();
+        Game game = new Game();
         grid = new Grid(client, game, lock);
         connectionMenu = new ConnectionMenu(game, client, this, grid, lock);
 
@@ -32,7 +31,6 @@ public class Main extends JFrame {
     public void setClient(Client client) {
         this.client = client;
         grid.setClient(client);
-        System.out.println("Setting client in main to new client: " + this.client);
     }
 
     public static void main(String[] args) {

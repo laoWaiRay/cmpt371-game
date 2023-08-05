@@ -1,3 +1,13 @@
+/*  Client is a networking class responsible for sending the initial connection request to the
+ *  server. After establishing a connection, it starts two sub-threads: one which handles listening
+ *  for updates from the server, and another which handles listening for updates from the player.
+ *
+ *  When a message is received from the server, the client's game state / UI is updated to reflect the server.
+ *  When the user makes a game action, a message is sent to the server telling it to update the
+ *  principle / shared game state, which is then rebroadcast to all players to enable a real-time shared
+ *  game state.
+ */
+
 import javax.imageio.ImageIO;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;

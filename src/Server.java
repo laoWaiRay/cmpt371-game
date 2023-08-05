@@ -1,3 +1,9 @@
+/*  Server is a networking class responsible for establishing socket connections with each client.
+ *  For each connected client, a new thread is started which listens for messages from
+ *  that client, updates a shared game state, and then broadcasts the updated game state
+ *  to all players.
+ */
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;

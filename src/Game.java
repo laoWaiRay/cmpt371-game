@@ -1,3 +1,8 @@
+/*  This class represents the game state for a client or a server.
+ *  Importantly, much of the logic for handling each square's mutex is
+ *  implemented here.
+ */
+
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.Serializable;
@@ -8,7 +13,7 @@ public class Game implements Serializable {
 
     public Game() {
         for (int i = 0; i < 25; i++) {
-            squares[i] = new GameSquare(i);
+            squares[i] = new GameSquare();
         }
     }
 
@@ -29,11 +34,12 @@ public class Game implements Serializable {
         numFullyColoredSquares++;
     }
 
-    //checks all squares to see if any square is still blank/white 
+    // checks if all squares have been colored in
     public boolean isGameFinished(){
         return numFullyColoredSquares == 25;
     }
 
+    // calculates scores for game over screen
     public synchronized int[] scores(){
         int[] score = new int[4];
         for (int i = 0; i < 4; i++){
@@ -57,6 +63,8 @@ public class Game implements Serializable {
         }
         return score;
     }
+
+    // Checks the winning player at game over screen
     public synchronized String winner(int[] s){
         String winner = "Winner: ";
         int max = s[0];
@@ -81,30 +89,32 @@ public class Game implements Serializable {
     }
 }
 
+// This class holds the image for a square on the grid, as well as
+// the logic for locking of squares.
 class GameSquare {
     private BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
     private int lockHolderId = 0;   // Client Ids start from 1
     private boolean fullyColored = false;
-    private final int squareId;
-
-    public GameSquare(int squareId) {
-        this.squareId = squareId;
-    }
 
     // Only allow one client to have access to the square at a time
     public synchronized void acquireLock(int clientId) {
+        // Only allow a client to acquire the lock if no other players are
+        // using it AND the square has not been fully colored in
         if (lockHolderId != 0 || fullyColored) return;
-        System.out.println("Acquired lock for square: ");
-        System.out.println(squareId);
         lockHolderId = clientId;
     }
 
+    // Free the lock
     public synchronized void releaseLock() {
         lockHolderId = 0;
     }
 
     public synchronized boolean hasAccess(int clientId) {
         return clientId == lockHolderId;
+    }
+
+    public synchronized void setFullyColored() {
+        this.fullyColored = true;
     }
 
     public synchronized void setImage(BufferedImage image) {
@@ -115,7 +125,4 @@ class GameSquare {
         return image;
     }
 
-    public synchronized void setFullyColored() {
-        this.fullyColored = true;
-    }
 }

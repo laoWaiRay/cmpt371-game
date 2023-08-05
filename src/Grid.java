@@ -1,14 +1,15 @@
+/*  The Grid class simply lays out the UI for the 25 squares of the game.
+ *  It contains UI methods for updating the images contained in the squares.
+ *  The Square class is where all the action for handling user input happens.
+ */
 import java.awt.*;
-import java.awt.event.*;
-import java.awt.image.BufferedImage;
 import javax.swing.*;
 
 public class Grid extends JPanel{
-    // Keep array of squares to track how much each one is colored in???
     private Square[] squares;
     private Client client;
-    private Game game;
-    private Object lock;
+    private final Game game;
+    private final Object lock;
 
     public Grid(Client client, Game game, Object lock) {
         super(new GridLayout(5,5));

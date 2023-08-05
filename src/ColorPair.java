@@ -1,3 +1,5 @@
+/*  Simple helper class for associating colors with names
+ */
 import java.awt.*;
 
 public class ColorPair{

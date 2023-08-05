@@ -1,3 +1,6 @@
+/*  This class is only significant because it contains the buttons
+ *  for starting a Server and joining as a Client.
+ */
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
