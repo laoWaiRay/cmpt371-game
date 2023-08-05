@@ -7,12 +7,11 @@ import javax.swing.JFrame;
 
 public class Game implements Serializable {
     private GameSquare[] squares = new GameSquare[25];
-    private int lastChangedSquare = 0;
     private boolean isStillDrawing = false;
 
     public Game() {
         for (int i = 0; i < 25; i++) {
-            squares[i] = new GameSquare();
+            squares[i] = new GameSquare(i);
         }
     }
 
@@ -22,19 +21,10 @@ public class Game implements Serializable {
 
     public void changeSquare(int index, BufferedImage newImage) {
         squares[index].setImage(newImage);
-        lastChangedSquare = index;
     }
 
     public BufferedImage getSquareImage(int index) {
         return squares[index].getImage();
-    }
-
-    public int getLastChangedSquare() {
-        return lastChangedSquare;
-    }
-
-    public void setLastChangedSquare(int squareIndex) {
-        lastChangedSquare = squareIndex;
     }
 
     public void setStillDrawing(boolean stillDrawing) {
@@ -112,14 +102,22 @@ class GameSquare {
     private BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
     private int lockHolderId = 0;   // Client Ids start from 1
     private boolean fullyColored = false;
+    private int squareId;
+
+    public GameSquare(int squareId) {
+        this.squareId = squareId;
+    }
 
     // Only allow one client to have access to the square at a time
     public synchronized void acquireLock(int clientId) {
         if (lockHolderId != 0 || fullyColored) return;
+        System.out.println("Acquired lock for square: ");
+        System.out.println(squareId);
         lockHolderId = clientId;
     }
 
     public synchronized void releaseLock() {
+        System.out.println("Releasing lock for square: " + String.valueOf(squareId));
         lockHolderId = 0;
     }
 

@@ -79,6 +79,7 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             synchronized (lock) {
                 g.dispose();
                 game.changeSquare(id, img);
+                client.setLastChangedSquare(id);
                 game.setStillDrawing(true);
                 lock.notifyAll();
                 repaint();
@@ -108,6 +109,9 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
 
     @Override
     public void mouseReleased(MouseEvent e) {
+        System.out.println(game.getGameSquare(id).hasAccess(client.getClientId()));
+        System.out.println(game.getGameSquare(id));
+        System.out.println(client.getClientId());
         if (!game.getGameSquare(id).hasAccess(client.getClientId())) return;
 
         double percentColored = calculateColoredPercentage();
@@ -130,7 +134,8 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             game.changeSquare(id, img);
             game.setStillDrawing(true);
             client.setTokenMessage("UNLOCK");
-            game.setLastChangedSquare(id);
+            client.setLastChangedSquare(id);
+            System.out.println("DEBUGGING last square id " + String.valueOf(id));
             lock.notifyAll();
             // repaint();
             if(game.isGameFinished()){
@@ -152,8 +157,9 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
     /* TODO - 2023/7/15 | 17:41 | raymondly
     *   LOCK THE SQUARE WHILE A USER IS DRAGGING MOUSE INSIDE OF IT
     * */
-        game.setLastChangedSquare(id);
         synchronized (lock) {
+            System.out.println("DEBUG2 sq id" + String.valueOf(id));
+            client.setLastChangedSquare(id);
             client.setTokenMessage("LOCK");
             lock.notifyAll();
         }

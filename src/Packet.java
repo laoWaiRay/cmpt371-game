@@ -5,14 +5,24 @@ import java.io.IOException;
 import java.io.Serializable;
 
 public class Packet implements Serializable {
-    String token = null;
+    String token;
     byte[] bytes;
     int index;
     int senderId;
 
     public Packet(String token, Game game, int senderId) {
         this.token = token;
-        this.index = game.getLastChangedSquare();
+        this.senderId = senderId;
+        bytes = bufferedImageToByteArray(game.getSquareImage(this.index));
+        // System.out.println("PACKET MADE WITH SQUARE INDEX");
+        // System.out.println(this.index);
+        // System.out.println("AND TOKEN");
+        // System.out.println(this.token);
+    }
+
+    public Packet(String token, Game game, int squareIndex, int senderId) {
+        this.token = token;
+        this.index = squareIndex;
         this.senderId = senderId;
         bytes = bufferedImageToByteArray(game.getSquareImage(this.index));
     }

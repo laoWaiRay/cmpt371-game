@@ -27,6 +27,7 @@ public class Client extends Thread {
     private String colorName;
     private Color color;
     private String tokenMessage = "DRAW";
+    private int lastChangedSquare;
 
     public Client(int port, Game game, Grid grid, Object lock) {
         this.port = port;
@@ -179,6 +180,9 @@ public class Client extends Thread {
         return tokenMessage;
     }
 
+    public void setLastChangedSquare(int index) { lastChangedSquare = index; }
+    public int getLastChangedSquare() { return lastChangedSquare; }
+
 }
 
 class ServerListener implements Runnable {
@@ -216,6 +220,7 @@ class ServerListener implements Runnable {
                         // Avoid duplicate rendering of own square data
                         if (packetIn.senderId != id) {
                             game.changeSquare(packetIn.index, bufferedImage);
+                            client.setLastChangedSquare(id);
                             grid.updateImage(packetIn.index);
                             grid.repaintSquare(packetIn.index);
                         }
@@ -227,6 +232,7 @@ class ServerListener implements Runnable {
                         // Avoid duplicate rendering of own square data
                         if (packetIn.senderId != id) {
                             game.changeSquare(packetIn.index, bufferedImage);
+                            client.setLastChangedSquare(id);
                             grid.updateImage(packetIn.index);
                             grid.repaintSquare(packetIn.index);
                             System.out.println("HERE" + " Sender id: " + packetIn.senderId + ", my id: " + id);
@@ -276,8 +282,8 @@ class UserInputListener implements Runnable {
 
             if (game.getIsStillDrawing() || true) {
                 try {
-                    System.out.println(client.getTokenMessage());
-                    oos.writeObject(new Packet(client.getTokenMessage(), game, id));
+                    System.out.println(client.getTokenMessage() + " at square: " + client.getLastChangedSquare());
+                    oos.writeObject(new Packet(client.getTokenMessage(), game, client.getLastChangedSquare(), id));
                     game.setStillDrawing(false);
                 } catch (IOException e) {
                     e.printStackTrace();

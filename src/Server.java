@@ -45,6 +45,13 @@ public class Server extends Thread {
         }
     }
 
+    public void messageAllClients(String token, Game game, int squareIndex, int senderId) {
+        for (ClientConnection client : clientList) {
+            System.out.println("Messaging client id: " + client.getId());
+            client.sendMessage(token, game, squareIndex, senderId);
+        }
+    }
+
     // Accept client connections on a new thread to not block the stop call
     @Override
     public void run() {
@@ -123,6 +130,9 @@ class ClientHandler implements Runnable {
                 InputStream is = new ByteArrayInputStream(packetIn.bytes);
                 BufferedImage bufferedImage = ImageIO.read(is);
                 is.close();
+                System.out.println("PACKET:");
+                System.out.println(packetIn.token);
+                System.out.println(packetIn.index);
                 switch(packetIn.token){
                     //Inform all clients to start
                     case "START" -> {
@@ -134,7 +144,7 @@ class ClientHandler implements Runnable {
                         grid.repaintSquare(packetIn.index);
                     }
                     case "LOCK" -> {
-                        System.out.println("GETTING LOCK");
+                        System.out.println("GETTING LOCK at square " + String.valueOf(squareIndex));
                         game.getGameSquare(squareIndex).acquireLock(senderId);
                     }
                     case "UNLOCK" -> {
@@ -149,11 +159,10 @@ class ClientHandler implements Runnable {
                 }
 
                 // WRITE
-                game.setLastChangedSquare(squareIndex);
                 switch (packetIn.token) {
-                    case "DRAW" -> server.messageAllClients("DRAW", game, senderId);
-                    case "LOCK" -> server.messageAllClients("LOCK", game, senderId);
-                    case "UNLOCK" -> server.messageAllClients("UNLOCK", game, senderId);
+                    case "DRAW" -> server.messageAllClients("DRAW", game, squareIndex, senderId);
+                    case "LOCK" -> server.messageAllClients("LOCK", game, squareIndex, senderId);
+                    case "UNLOCK" -> server.messageAllClients("UNLOCK", game, squareIndex, senderId);
                 }
                 // oos.writeObject(new Packet("DRAW", game, senderId));
             } catch (IOException error) {
@@ -183,6 +192,14 @@ class ClientConnection {
     public void sendMessage(String token, Game game, int senderId) {
         try {
             oos.writeObject(new Packet(token, game, senderId));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendMessage(String token, Game game, int squareIndex, int senderId) {
+        try {
+            oos.writeObject(new Packet(token, game, squareIndex, senderId));
         } catch (IOException e) {
             e.printStackTrace();
         }
