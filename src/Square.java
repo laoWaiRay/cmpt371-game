@@ -1,3 +1,19 @@
+ /*   General game flow for the player
+
+  *   1) On Click, the client sends a token to the server indicating it wants to acquire
+  *      a lock for the square
+  *
+  *   2) Lock is only given if not currently acquired by another player, AND
+  *      the square has not been fully colored
+  *
+  *   3) Once acquired, dragging the mouse allows the client to color on the square
+  *
+  *   4) On mouse release, a release token is sent to the server indicating the square
+  *      should be unlocked. Additionally, every time the mouse is released, the server
+  *      is sent a final snapshot of the square, which it then uses to calculate whether
+  *      the square should be fully colored in or reset back to white. If all squares are
+  *      colored in, the server broadcasts a GAME OVER message to all players
+  * */
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseListener;
@@ -7,14 +23,13 @@ import java.awt.image.BufferedImage;
 
 public class Square extends JPanel implements MouseMotionListener, MouseListener {
     private BufferedImage img;
-    private String color_name;
     private Color brush_color = null;
     public int id;
     final static int width = 100;
     final static int height = 100;
     final static int brush_size = 10;
     private Client client;
-    private Game game;
+    private final Game game;
     private final Object lock;
 
     public Square(int id, Client client, Game game, Object lock) {
@@ -33,10 +48,6 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         this.lock = lock;
     }
 
-    public void setBrushColor(Color color) {
-        brush_color = color;
-    }
-
     public void setImage(BufferedImage image) {
         img = image;
     }
@@ -51,31 +62,24 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        /* TODO - 2023/7/26 | 01:29 | raymondly
-        *   INITIALLY, ALL SQUARES SHOULD BE LOCKED ON THE SERVER.
-        *   CLIENT SENDS A TOKEN REQUEST TO SERVER FOR THE LOCK ON THE SQUARE,
-        *   BEFORE ALLOWING THE USER TO DRAW.
-        *   LOCK SHOULD ONLY BE GIVEN IF THE SQUARE IS NOT CURRENTLY ACQUIRED
-        *   BY ANOTHER PLAYER, AND THE SQUARE IS NOT FULLY COLORED.
-        *   ONCE ACQUIRED, THE USER CAN UPDATE THE SQUARE
-        *   ON MOUSE RELEASE, SEND A RELEASE TOKEN TO INDICATE
-        *   TO SERVER TO RELEASE THE LOCK
-        * */
         if (client == null) return;
         if (brush_color == null)
             setColors();
 
-        // Only update the game state if this client has acquired access to the square from server
+        // Only update the game state if this client has acquired the lock
         if (game.getGameSquare(id).hasAccess(client.getClientId())) {
             client.setTokenMessage("DRAW");
             Graphics g = img.getGraphics();
 
-            // COLOR THE SQUARE
+            // Coloring the square
             g.setColor(brush_color);
             Point p = e.getPoint();
             g.fillOval(p.x - brush_size, p.y - brush_size, brush_size, brush_size);
 
-            // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
+            // NOTE: Clients always update their own UI when coloring a square, for more responsiveness
+            // on the client side. It also sends a message to the server with this information, which
+            // the server broadcasts to everyone. The client simply ignores the DRAW message if the
+            // sender ID matches itself.
             synchronized (lock) {
                 g.dispose();
                 game.changeSquare(id, img);
@@ -86,31 +90,8 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         }
     }
 
-    // RETURNS Percentage of square that is colored in
-    private double calculateColoredPercentage() {
-        int coloredPixels = 0;
-        int totalPixels = width * height;
-
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                int pixel = img.getRGB(x, y);
-                if(brush_color != null) {
-                    if (pixel == brush_color.getRGB()) {
-                        coloredPixels++;
-                    }
-                    
-                }
-            }
-        }
-
-        return (double) coloredPixels / totalPixels;
-    }
-
     @Override
     public void mouseReleased(MouseEvent e) {
-        System.out.println(game.getGameSquare(id).hasAccess(client.getClientId()));
-        System.out.println(game.getGameSquare(id));
-        System.out.println(client.getClientId());
         if (!game.getGameSquare(id).hasAccess(client.getClientId())) return;
 
         double percentColored = calculateColoredPercentage();
@@ -128,7 +109,7 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
         g.dispose();
         repaint();
 
-        // UPDATE GAME STATE WITH NEW BUFFERED IMAGE
+        // On mouse release, send a message to the server to unlock the square
         synchronized (lock) {
             game.changeSquare(id, img);
             client.setTokenMessage("UNLOCK");
@@ -163,5 +144,25 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         g.drawImage(img, 0, 0, null);
+    }
+
+    // HELPER METHOD: returns percentage of square that is colored in
+    private double calculateColoredPercentage() {
+        int coloredPixels = 0;
+        int totalPixels = width * height;
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                int pixel = img.getRGB(x, y);
+                if(brush_color != null) {
+                    if (pixel == brush_color.getRGB()) {
+                        coloredPixels++;
+                    }
+
+                }
+            }
+        }
+
+        return (double) coloredPixels / totalPixels;
     }
 }
