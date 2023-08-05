@@ -26,7 +26,6 @@ public class Client extends Thread {
     volatile boolean isRunning = true;
     private String colorName;
     private Color color;
-    private int score = 0;      //keeps track of each players score
     private String tokenMessage = "DRAW";
 
     public Client(int port, Game game, Grid grid, Object lock) {
@@ -38,7 +37,7 @@ public class Client extends Thread {
 
     @Override
     public void run() {
-        try (Socket socket = new Socket(InetAddress.getByName("192.168.1.70"), port)) {
+        try (Socket socket = new Socket(InetAddress.getByName("127.0.0.1"), port)) {
             System.out.println("Connected to server!");
             OutputStream os = socket.getOutputStream();
             InputStream is = socket.getInputStream();
@@ -168,13 +167,6 @@ public class Client extends Thread {
         return color;
     }
 
-    public int getScore(){
-        return score;
-    }
-    public void addScore(){
-        score += 1;
-    }
-
     public int getClientId() {
         return id;
     }
@@ -242,6 +234,9 @@ class ServerListener implements Runnable {
                         int squareIndex = packetIn.index;
                         game.getGameSquare(squareIndex).releaseLock();
                     }
+                }
+                if (game.isGameFinished()){
+                    JOptionPane.showMessageDialog(grid,game.winner(game.scores()));
                 }
             } catch (IOException e) {
                 break;

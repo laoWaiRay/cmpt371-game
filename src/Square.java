@@ -116,7 +116,6 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
 
         if (percentColored > 0.5) {
             g.setColor(brush_color);
-            client.addScore();
         } else {
             g.setColor(Color.WHITE);
         }
@@ -134,9 +133,15 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             game.setLastChangedSquare(id);
             lock.notifyAll();
             // repaint();
-            System.out.println("Client " + client.getClientId() + " Score: " + client.getScore());
             if(game.isGameFinished()){
-                System.out.println("Game Over");
+                //System.out.println("Game Over");
+                int [] scores = game.scores();
+                for(int i =0; i<4;i++){
+                    System.out.println(scores[i]);
+                }
+                String s = game.winner(scores);
+                System.out.println("Winner: " + s);
+                
                 //change screen to game over screen with winner shown
             }
         }
