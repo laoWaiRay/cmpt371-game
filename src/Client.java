@@ -207,6 +207,11 @@ class ServerListener implements Runnable {
                 // READ FROM SERVER AND UPDATE CLIENT GAME STATE
                 Packet packetIn = (Packet) ois.readObject();
 
+                System.out.println("Got server packet from sender: " + String.valueOf(packetIn.senderId));
+                System.out.println("Square is: " + String.valueOf(packetIn.index));
+                if (packetIn.token != null)
+                    System.out.println("Action is: " + packetIn.token);
+
                 switch (packetIn.token) {
                     case "LOCK" -> {
                         int squareIndex = packetIn.index;
@@ -235,7 +240,6 @@ class ServerListener implements Runnable {
                             client.setLastChangedSquare(id);
                             grid.updateImage(packetIn.index);
                             grid.repaintSquare(packetIn.index);
-                            System.out.println("HERE" + " Sender id: " + packetIn.senderId + ", my id: " + id);
                         }
                         int squareIndex = packetIn.index;
                         game.getGameSquare(squareIndex).releaseLock();

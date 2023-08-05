@@ -40,7 +40,6 @@ public class Server extends Thread {
 
     public void messageAllClients(String token, Game game, int senderId) {
         for (ClientConnection client : clientList) {
-            System.out.println("Messaging client id: " + client.getId());
             client.sendMessage(token, game, senderId);
         }
     }
