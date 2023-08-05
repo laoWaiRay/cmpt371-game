@@ -162,17 +162,19 @@ class ClientHandler implements Runnable {
                         int rgb = bufferedImage.getRGB(50, 50);
                         Color colour = new Color(rgb);
                         Color def = new Color(0, 0,0);
-                        if (!(colour.equals(Color.WHITE) | colour.equals(def))){
+                        if (!(colour.equals(Color.WHITE) | colour.equals(def))) {
                             // Setting the square to fully colored locks it forever
                             game.setSquareFullyColored(packetIn.index);
+                            server.messageAllClients("FULLY_COLOR", game, packetIn.index, 0);
                         }
 
-                        // Unlock square (if the square is fully colored, this doesn't unlock it)
+                        // Unlock the square (if the square is fully colored, it does not unlock)
                         game.getGameSquare(squareIndex).releaseLock();
 
                         // Check if game is over and inform all clients
                         if (game.isGameFinished()) {
                             server.messageAllClients("GAMEOVER", game, 0);
+                            return;
                         }
                     }
                 }

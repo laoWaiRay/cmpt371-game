@@ -242,6 +242,9 @@ class ServerListener implements Runnable {
                         int squareIndex = packetIn.index;
                         game.getGameSquare(squareIndex).releaseLock();
                     }
+                    case "FULLY_COLOR" -> {
+                        game.setSquareFullyColored(packetIn.index);
+                    }
                     case "GAMEOVER" -> {
                         JOptionPane.showMessageDialog(grid,game.winner(game.scores()));
                     }

@@ -135,7 +135,6 @@ public class Square extends JPanel implements MouseMotionListener, MouseListener
             game.setStillDrawing(true);
             client.setTokenMessage("UNLOCK");
             client.setLastChangedSquare(id);
-            System.out.println("DEBUGGING last square id " + String.valueOf(id));
             lock.notifyAll();
         }
     }
