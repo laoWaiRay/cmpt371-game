@@ -37,7 +37,7 @@ public class Client extends Thread {
 
     @Override
     public void run() {
-        try (Socket socket = new Socket(InetAddress.getByName("192.168.1.70"), port)) {
+        try (Socket socket = new Socket(InetAddress.getByName("127.0.0.1"), port)) {
             System.out.println("Connected to server!");
             OutputStream os = socket.getOutputStream();
             InputStream is = socket.getInputStream();
